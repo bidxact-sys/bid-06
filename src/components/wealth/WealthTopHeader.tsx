@@ -52,22 +52,36 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
 
   return (
     <header className="fixed top-0 left-0 lg:left-72 right-0 h-14 bg-[#0b1326]/90 backdrop-blur-xl border-b border-[#222a3d] z-40 px-2.5 sm:px-5 flex items-center justify-between gap-2 sm:gap-3 shadow-sm">
-      {/* Left: Mobile navigation control */}
-      <div className="flex items-center min-w-0">
+      {/* Workspace identity and mobile navigation */}
+      <div className="flex flex-1 items-center gap-2.5 min-w-0">
         {onToggleMobileMenu && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 text-[#bbcabf] hover:text-white rounded hover:bg-[#131b2e] transition-colors shrink-0"
+            className="lg:hidden p-2 text-[#bbcabf] hover:text-white rounded-lg hover:bg-[#131b2e] transition-colors shrink-0"
             aria-label="Toggle navigation menu"
           >
             <span className="material-symbols-outlined text-xl">menu</span>
           </button>
         )}
+        <div className="hidden sm:flex items-center gap-2.5 min-w-0">
+          <div className="h-9 w-9 rounded-xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-lg text-[#4edea3]">account_balance_wallet</span>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-['Manrope'] text-sm lg:text-base font-bold text-[#edf2ff] truncate">Personal Financial Overview</h1>
+              <span className="hidden lg:inline-flex items-center gap-1 rounded-full bg-[#4edea3]/10 border border-[#4edea3]/20 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-[#4edea3]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#4edea3]" />Live
+              </span>
+            </div>
+            <p className="text-[10px] text-[#91a0c5] font-mono truncate">Consolidated wealth, treasury &amp; company connections</p>
+          </div>
+        </div>
       </div>
 
       {/* Right Actions & Utilities */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex max-w-[72%] items-center gap-1.5 sm:gap-2.5 shrink-0 overflow-x-auto no-scrollbar">
         {/* Mobile Search Button */}
         <button
           type="button"
