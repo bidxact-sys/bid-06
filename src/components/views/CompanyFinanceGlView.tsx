@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CompanyDataImportPanel } from './CompanyDataImportPanel';
 import {
   Landmark,
   ArrowUpRight,
@@ -11,7 +12,8 @@ import {
   Plus,
   Search,
   Filter,
-  Wallet
+  Wallet,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface CompanyFinanceGlViewProps {
@@ -97,6 +99,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const filteredTransactions = INITIAL_TRANSACTIONS.filter((t) => {
     const matchesSearch =
@@ -109,6 +112,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   });
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -128,6 +132,13 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="h-9 px-3.5 bg-[#4edea3] hover:bg-[#63edb5] text-[#06251a] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Import Company Data</span>
+          </button>
           <button
             onClick={onSwitchToPersonalFinance}
             className="h-9 px-3.5 bg-[#131b2e] hover:bg-[#171f33] border border-[#4edea3]/40 text-[#4edea3] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
@@ -295,5 +306,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
         </div>
       </div>
     </div>
+    {isImportOpen && <CompanyDataImportPanel onClose={() => setIsImportOpen(false)} />}
+    </>
   );
 };
