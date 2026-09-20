@@ -74,7 +74,17 @@ router.delete('/transactions/:id', async (req, res) => {
 })
 
 router.get('/budgets', async (req, res) => { try { res.json(await db.select().from(financeBudgets).where(eq(financeBudgets.userId, getUserId(req)))) } catch (error) { handleRouteError(res, error) } })
-router.get('/goals', async (req, res) => { try { res.json(await db.select().from(financeGoals).where(eq(financeGoals.userId, getUserId(req)))) } catch (error) { handleRouteError(res, error) } })
+  router.get('/goals', async (req, res) => { try { res.json(await db.select().from(financeGoals).where(eq(financeGoals.userId, getUserId(req)))) } catch (error) { handleRouteError(res, error) } })
+  router.post('/goals', async (req, res) => {
+    try {
+      const body = req.body as Record<string, unknown>
+      const name = requiredText(body.name, 'name')
+      const targetAmount = money(body.targetAmount, 'targetAmount')
+      const currentAmount = money(body.currentAmount || 0, 'currentAmount')
+      const [goal] = await db.insert(financeGoals).values({ userId: getUserId(req), scope: getScope(body.scope), name, targetAmount, currentAmount, targetDate: body.targetDate ? String(body.targetDate) : null }).returning()
+      res.status(201).json(goal)
+    } catch (error) { handleRouteError(res, error) }
+  })
 router.get('/recurring', async (req, res) => { try { res.json(await db.select().from(financeRecurringRules).where(and(eq(financeRecurringRules.userId, getUserId(req)), eq(financeRecurringRules.isActive, true)))) } catch (error) { handleRouteError(res, error) } })
 
 export { router as financeRoutes }

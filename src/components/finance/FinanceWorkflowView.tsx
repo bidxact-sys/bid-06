@@ -104,6 +104,16 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
     }
   };
 
+  const handleAddGoal = async (goal: FinanceGoal) => {
+    setGoals((current) => [...current, goal]);
+    if (!apiEnabled) return;
+    try {
+      await financeApi.createGoal({ scope: 'personal', name: goal.title, targetAmount: goal.targetAmount, currentAmount: goal.currentAmount, targetDate: goal.targetDate });
+    } catch (error) {
+      console.error('[v0] Could not persist goal:', error);
+    }
+  };
+
   const handleAddAccount = async (account: FinanceAccount) => {
     setAccounts((current) => [...current, account]);
     if (!apiEnabled) return;
@@ -194,7 +204,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
 
       <AddAccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onAddAccount={handleAddAccount} />
       <AddTransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} accounts={displayedAccounts} onAddTransaction={handleAddTransaction} />
-      <AddGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} onAddGoal={(goal) => setGoals((current) => [...current, goal])} />
+      <AddGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} onAddGoal={handleAddGoal} />
       <ImportTransactionsModal isOpen={isImportModalOpen} accounts={displayedAccounts} onClose={() => setIsImportModalOpen(false)} onImport={(imported) => setTransactions((current) => [...imported, ...current])} />
     </div>
   );

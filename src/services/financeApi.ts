@@ -9,6 +9,15 @@ export interface FinanceApiAccount {
   currentBalance: string | number
 }
 
+export interface FinanceApiGoal {
+  id: number
+  name: string
+  targetAmount: string | number
+  currentAmount: string | number
+  targetDate?: string | null
+  scope: FinanceScope
+}
+
 export interface FinanceApiTransaction {
   id: number
   accountId: number
@@ -62,6 +71,7 @@ export const financeApi = {
   createTransaction: (input: FinanceTransactionInput) => request('/api/finance/transactions', { method: 'POST', body: JSON.stringify(input) }),
   deleteTransaction: (id: number) => request<void>(`/api/finance/transactions/${id}`, { method: 'DELETE' }),
   listBudgets: () => request('/api/finance/budgets'),
-  listGoals: () => request('/api/finance/goals'),
+  listGoals: () => request<FinanceApiGoal[]>('/api/finance/goals'),
+  createGoal: (input: { scope: FinanceScope; name: string; targetAmount: number; currentAmount?: number; targetDate?: string }) => request<FinanceApiGoal>('/api/finance/goals', { method: 'POST', body: JSON.stringify(input) }),
   listRecurringRules: () => request('/api/finance/recurring'),
 }
