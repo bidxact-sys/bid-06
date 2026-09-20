@@ -7,6 +7,17 @@ import { financeAccounts, financeBudgets, financeGoals, financeRecurringRules, f
 const app = express()
 app.use((_req, res, next) => { res.header('Access-Control-Allow-Origin', '*'); res.header('Access-Control-Allow-Headers', 'Content-Type, x-user-id'); res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS'); next() })
 app.use(express.json({ limit: '1mb' }))
+app.options('*', (_req, res) => res.sendStatus(204))
+
+function scope(value: unknown): 'personal' | 'company' {
+  if (value !== 'personal' && value !== 'company') throw new Error('scope must be personal or company')
+  return value
+}
+function positiveInteger(value: unknown, name: string) {
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer`)
+  return parsed
+}
 
 function userId(req: express.Request) {
   const value = req.header('x-user-id')
@@ -23,6 +34,17 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'finance-bac
 app.get('/api/finance/accounts', async (req, res) => {
   try { res.json(await db.select().from(financeAccounts).where(eq(financeAccounts.userId, userId(req)))) } catch (error) { res.status(400).json({ error: (error as Error).message }) }
 })
+app.post('/api/finance/accounts', async (req, res) => {
+  try {
+    const uid = userId(req)
+    const body = req.body as Record<string, unknown>
+    const name = String(body.name || '').trim()
+    if (!name) throw new Error('name is required')
+    const openingBalance = number(body.openingBalance || 0, 'openingBalance')
+    const [created] = await db.insert(financeAccounts).values({ userId: uid, scope: scope(body.scope), name, type: String(body.type || 'checking'), currency: String(body.currency || 'USD'), openingBalance, currentBalance: openingBalance }).returning()
+    res.status(201).json(created)
+  } catch (error) { res.status(400).json({ error: (error as Error).message }) }
+})
 app.get('/api/finance/transactions', async (req, res) => {
   try { res.json(await db.select().from(financeTransactions).where(eq(financeTransactions.userId, userId(req))).orderBy(desc(financeTransactions.transactionDate), desc(financeTransactions.id))) } catch (error) { res.status(400).json({ error: (error as Error).message }) }
 })
@@ -31,9 +53,20 @@ app.post('/api/finance/transactions', async (req, res) => {
     const uid = userId(req)
     const body = req.body as Record<string, unknown>
     const amount = number(body.amount, 'amount')
+    const accountId = positiveInteger(body.accountId, 'accountId')
     const type = String(body.type)
     if (!['income', 'expense', 'transfer', 'deposit', 'withdrawal', 'adjustment'].includes(type)) throw new Error('Invalid transaction type')
-    const [created] = await db.insert(financeTransactions).values({ userId: uid, accountId: Number(body.accountId), scope: body.scope === 'company' ? 'company' : 'personal', type, amount, description: String(body.description || 'Transaction'), transactionDate: body.transactionDate ? String(body.transactionDate) : undefined, category: body.category ? String(body.category) : null, counterparty: body.counterparty ? String(body.counterparty) : null, transferAccountId: body.transferAccountId ? Number(body.transferAccountId) : null }).returning()
+    const transactionScope = scope(body.scope)
+    const description = String(body.description || '').trim()
+    if (!description) throw new Error('description is required')
+    const created = await db.transaction(async (tx) => {
+      const [account] = await tx.select().from(financeAccounts).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, uid))).limit(1)
+      if (!account) throw new Error('Account not found')
+      const [row] = await tx.insert(financeTransactions).values({ userId: uid, accountId, scope: transactionScope, type, amount, description, transactionDate: body.transactionDate ? String(body.transactionDate) : undefined, category: body.category ? String(body.category) : null, counterparty: body.counterparty ? String(body.counterparty) : null, transferAccountId: body.transferAccountId ? positiveInteger(body.transferAccountId, 'transferAccountId') : null }).returning()
+      const direction = type === 'income' || type === 'deposit' ? 1 : type === 'expense' || type === 'withdrawal' ? -1 : 0
+      if (direction) await tx.update(financeAccounts).set({ currentBalance: String(Number(account.currentBalance) + direction * Number(amount),) }).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, uid)))
+      return row
+    })
     res.status(201).json(created)
   } catch (error) { res.status(400).json({ error: (error as Error).message }) }
 })
