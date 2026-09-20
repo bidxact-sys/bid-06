@@ -24,11 +24,14 @@ import {
   ShieldAlert,
   UserCheck,
   Zap,
-  Workflow
+  Workflow,
+  Percent,
+  CalendarClock
 } from 'lucide-react';
 
 export type NavTabId =
   | 'overview'
+  | 'company-reminders'
   | 'workflow-automation'
   | 'client-portal'
   | 'inflow-outflow'
@@ -36,6 +39,7 @@ export type NavTabId =
   | 'projects'
   | 'hr-directory'
   | 'payroll'
+  | 'commission-settings'
   | 'loans'
   | 'partners'
   | 'emergency-fund'
@@ -54,7 +58,7 @@ interface SidebarProps {
   activeTab: NavTabId;
   onSelectTab: (tab: NavTabId) => void;
   openRfiCount: number;
-  overdueLoanCount?: number;
+  urgentReminderCount?: number;
   onSwitchWorkspace?: (ws: 'personal-finance' | 'pre-con-estimating') => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -64,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   openRfiCount,
-  overdueLoanCount = 0,
+  urgentReminderCount = 0,
   onSwitchWorkspace,
   isMobileOpen = false,
   onCloseMobile,
@@ -158,6 +162,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <LayoutDashboard className={`w-3.5 h-3.5 ${activeTab === 'overview' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} />
                 <span>Overview / Operations</span>
               </div>
+            </button>
+
+            <button
+              id="nav-company-reminders"
+              onClick={() => handleNav('company-reminders')}
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === 'company-reminders'
+                  ? 'bg-[#171f33] text-white font-medium border-l-2 border-[#4edea3]'
+                  : 'text-[#bbcabf] hover:bg-[#131b2e] hover:text-[#dae2fd]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CalendarClock className={`w-3.5 h-3.5 ${activeTab === 'company-reminders' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} />
+                <span className="font-semibold">Company Reminders</span>
+              </div>
+              {urgentReminderCount > 0 ? (
+                <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#f43f5e]/20 text-[#f43f5e] rounded font-bold border border-[#f43f5e]/30 animate-pulse">
+                  {urgentReminderCount} DUE
+                </span>
+              ) : (
+                <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#4edea3]/15 text-[#4edea3] rounded font-bold">
+                  TAX & CALLS
+                </span>
+              )}
             </button>
 
             <button
@@ -274,6 +302,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
+              id="nav-commission-settings"
+              onClick={() => handleNav('commission-settings')}
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === 'commission-settings'
+                  ? 'bg-[#171f33] text-white font-medium border-l-2 border-[#4edea3]'
+                  : 'text-[#bbcabf] hover:bg-[#131b2e] hover:text-[#dae2fd]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Percent className={`w-3.5 h-3.5 ${activeTab === 'commission-settings' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} />
+                <span>Commission Settings</span>
+              </div>
+              <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#38bdf8]/15 text-[#38bdf8] rounded font-bold">
+                RULES
+              </span>
+            </button>
+
+            <button
               id="nav-contractors"
               onClick={() => handleNav('contractors')}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
@@ -328,12 +374,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Loan Management</span>
               </div>
               <div className="flex items-center gap-1.5">
-                {overdueLoanCount > 0 && (
-                  <span className="font-mono text-[9px] font-bold px-1.5 py-0.2 bg-[#ffb4ab]/20 text-[#ffb4ab] border border-[#ffb4ab]/40 rounded-full flex items-center gap-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#ffb4ab]" />
-                    {overdueLoanCount} overdue
-                  </span>
-                )}
                 <span className="font-mono text-[10px] px-1.5 py-0.5 bg-[#2d3449] text-[#dae2fd] rounded">
                   2
                 </span>

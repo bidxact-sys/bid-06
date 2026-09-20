@@ -26,28 +26,13 @@ import {
   Info,
   PenTool,
   Eraser,
-  Bell,
-  BellRing,
-  Mail,
   Volume2,
   VolumeX,
   ExternalLink,
-  History,
-  AlertTriangle,
   RefreshCw,
   FileText
 } from 'lucide-react';
 import { LoanItem, LoanPaymentRecord, CashTransaction, EmployeeItem, LoanPaymentReceiptData } from '../../types';
-import {
-  LoanNotificationService,
-  OverdueLoanAlert,
-  NotificationLogItem,
-  LoanNotificationSettings,
-} from '../../services/loanNotificationService';
-import { LoanDesktopNotificationToast } from '../loans/LoanDesktopNotificationToast';
-import { LoanEmailPreviewModal } from '../loans/LoanEmailPreviewModal';
-import { LoanNotificationAuditModal } from '../loans/LoanNotificationAuditModal';
-import { LoanNotificationSettingsModal } from '../loans/LoanNotificationSettingsModal';
 import { LoanPaymentReceiptModal } from '../loans/LoanPaymentReceiptModal';
 import { downloadLoanPaymentPdf } from '../../utils/loanPdfReceiptGenerator';
 
@@ -91,162 +76,10 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
   const signatureCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
 
-  // Automated Overdue Notification Service State
-  const [notificationSettings, setNotificationSettings] = useState<LoanNotificationSettings>(() =>
-    LoanNotificationService.getSettings()
-  );
-  const [overdueAlerts, setOverdueAlerts] = useState<OverdueLoanAlert[]>([]);
-  const [notificationLogs, setNotificationLogs] = useState<NotificationLogItem[]>(() =>
-    LoanNotificationService.getLogs()
-  );
-  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
-  const [isAlertHistoryOpen, setIsAlertHistoryOpen] = useState(false);
-  const [browserPermission, setBrowserPermission] = useState<NotificationPermission>(() =>
-    LoanNotificationService.getPermissionState()
-  );
-  const [lastCheckMessage, setLastCheckMessage] = useState<string | null>(null);
-  const [dismissedAlertLoanIds, setDismissedAlertLoanIds] = useState<string[]>([]);
-  const [simulatedEmailRecipient, setSimulatedEmailRecipient] = useState<string>('bidxact@gmail.com');
-  const [activeDesktopToast, setActiveDesktopToast] = useState<OverdueLoanAlert | null>(null);
-  const [selectedLogForEmailPreview, setSelectedLogForEmailPreview] = useState<NotificationLogItem | null>(null);
-  const [isEmailPreviewOpen, setIsEmailPreviewOpen] = useState(false);
-
   // Automatic PDF Receipt Generation State
   const [activeReceiptData, setActiveReceiptData] = useState<LoanPaymentReceiptData | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [autoGeneratePdfReceipt, setAutoGeneratePdfReceipt] = useState(true);
-
-  // Subscribe to real-time notification events
-  useEffect(() => {
-    const unsubscribe = LoanNotificationService.subscribe((alert) => {
-      setActiveDesktopToast(alert);
-    });
-    return unsubscribe;
-  }, []);
-
-  // Automatic Evaluation & Interval Daemon
-  useEffect(() => {
-    const runCheck = (force: boolean = false) => {
-      // Evaluate against current loans
-      const result = LoanNotificationService.runAutomatedAlertCheck(loans, { force });
-      setOverdueAlerts(result.alertsFound);
-      setNotificationLogs(LoanNotificationService.getLogs());
-      setBrowserPermission(LoanNotificationService.getPermissionState());
-      if (result.alertsFound.length > 0) {
-        setLastCheckMessage(
-          `Automated Check: ${result.alertsFound.length} loan payment(s) ≥ ${notificationSettings.overdueThresholdDays} days overdue detected. Alerts dispatched!`
-        );
-      }
-    };
-
-    // Initial check on mount
-    runCheck(false);
-
-    // Periodic check interval
-    const intervalMs = Math.max(1, notificationSettings.checkIntervalMinutes) * 60 * 1000;
-    const interval = setInterval(() => {
-      if (notificationSettings.autoCheckEnabled) {
-        runCheck(false);
-      }
-    }, intervalMs);
-
-    return () => clearInterval(interval);
-  }, [loans, notificationSettings.autoCheckEnabled, notificationSettings.overdueThresholdDays, notificationSettings.checkIntervalMinutes]);
-
-  // Request Desktop Notification Permission
-  const handleEnableDesktopNotifications = async () => {
-    const perm = await LoanNotificationService.requestPermission();
-    setBrowserPermission(perm);
-    if (perm === 'granted') {
-      const targetAlert = overdueAlerts[0] || {
-        loanId: 'LOAN-EMP-03',
-        loanName: 'Syed Ahmed - Family Emergency Hardship Advance',
-        borrowerName: 'Syed Ahmed',
-        borrowerEmail: 'syed.ahmed@bidexact.com',
-        borrowerRole: 'Senior Civil & Structural Estimator',
-        monthlyPayment: 400,
-        currentBalance: 2000,
-        nextPaymentDue: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10),
-        daysOverdue: 3,
-        direction: 'company_loaned_out' as const,
-        repaymentMethod: 'Payroll Deduction',
-        alertType: 'CRITICAL_OVERDUE' as const,
-      };
-      LoanNotificationService.triggerDesktopNotification(targetAlert);
-      LoanNotificationService.playAlertSound();
-      setActiveDesktopToast(targetAlert);
-      setLastCheckMessage('Browser Desktop Notifications enabled! Active 3-day overdue payment alert displayed on your desktop.');
-    } else {
-      setLastCheckMessage('Browser notification permission was not granted. Desktop notifications may be blocked by your browser settings.');
-    }
-  };
-
-  // Trigger test 3-day overdue alert
-  const handleTriggerTestAlert = () => {
-    const targetAlert: OverdueLoanAlert = overdueAlerts[0] || {
-      loanId: 'LOAN-EMP-03',
-      loanName: 'Syed Ahmed - Family Emergency Hardship Advance',
-      borrowerName: 'Syed Ahmed',
-      borrowerEmail: 'syed.ahmed@bidexact.com',
-      borrowerRole: 'Senior Civil & Structural Estimator',
-      monthlyPayment: 400,
-      currentBalance: 2000,
-      nextPaymentDue: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10),
-      daysOverdue: 3,
-      direction: 'company_loaned_out',
-      repaymentMethod: 'Payroll Deduction',
-      alertType: 'CRITICAL_OVERDUE',
-    };
-
-    const delivered = LoanNotificationService.triggerDesktopNotification(targetAlert);
-    LoanNotificationService.playAlertSound();
-    setActiveDesktopToast(targetAlert);
-
-    const { subject, bodyHtml } = LoanNotificationService.generateEmailAlertContent(
-      targetAlert,
-      notificationSettings.adminAlertEmail
-    );
-
-    const testLog: NotificationLogItem = {
-      id: `NOTIF-TEST-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      loanId: targetAlert.loanId,
-      loanName: targetAlert.loanName,
-      borrowerName: targetAlert.borrowerName,
-      borrowerEmail: targetAlert.borrowerEmail,
-      recipientEmail: notificationSettings.adminAlertEmail,
-      daysOverdue: targetAlert.daysOverdue,
-      amountDue: targetAlert.monthlyPayment,
-      channels: delivered ? ['browser_desktop', 'email_smtp', 'in_app'] : ['email_smtp', 'in_app'],
-      status: delivered ? 'desktop_displayed' : 'simulated_email_dispatched',
-      summary: `Automated test alert: ${targetAlert.daysOverdue} days overdue. Monthly payment $${targetAlert.monthlyPayment.toLocaleString()} overdue since ${targetAlert.nextPaymentDue}. Email sent to ${notificationSettings.adminAlertEmail}.`,
-      emailSubject: subject,
-      emailBodyHtml: bodyHtml,
-    };
-
-    LoanNotificationService.appendLogs([testLog]);
-    setNotificationLogs(LoanNotificationService.getLogs());
-
-    if (delivered) {
-      setLastCheckMessage(`✅ Desktop notification triggered on your screen! Automated email notice dispatched to ${notificationSettings.adminAlertEmail}.`);
-    } else {
-      setLastCheckMessage(`⚠️ In-app desktop notification triggered and email sent to ${notificationSettings.adminAlertEmail}. To pop up outside the browser tab, grant permission using "Enable Desktop Alerts".`);
-    }
-  };
-
-  // Trigger manual check now
-  const handleRunAlertCheckNow = () => {
-    const result = LoanNotificationService.runAutomatedAlertCheck(loans, { force: true });
-    setOverdueAlerts(result.alertsFound);
-    setNotificationLogs(LoanNotificationService.getLogs());
-    if (result.alertsFound.length > 0) {
-      setLastCheckMessage(
-        `Scanned loans: Found ${result.alertsFound.length} overdue loan(s). Dispatched alerts via Desktop Notification & Email to ${notificationSettings.adminAlertEmail}.`
-      );
-    } else {
-      setLastCheckMessage(`Scanned loans: All active loans are within normal schedule. None are ≥ ${notificationSettings.overdueThresholdDays} days overdue.`);
-    }
-  };
 
   // Extra Principal Payoff Simulation State
   const [extraPayment, setExtraPayment] = useState<number>(200);
@@ -583,8 +416,6 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
         console.warn('PDF automatic download trigger error:', pdfErr);
       }
     }
-
-    setLastCheckMessage(`✅ Repayment of $${amountNum.toLocaleString()} recorded successfully! Official PDF Receipt #${receiptNumber} generated automatically.`);
   };
 
   const handleViewReceiptForPayment = (pmt: LoanPaymentRecord) => {
@@ -656,8 +487,21 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
       ? `${resolvedBorrowerName} - ${newLoanTitle || newType}`
       : newLoanTitle || `${newLenderName} Facility`;
 
+    const prefix = isCompanyLoaned ? 'LOAN-EMP-' : 'LOAN-';
+    let maxLoanNum = 0;
+    for (const l of loans) {
+      if (l.id.startsWith(prefix)) {
+        const numPart = l.id.slice(prefix.length);
+        const parsed = parseInt(numPart, 10);
+        if (!isNaN(parsed) && parsed > maxLoanNum) {
+          maxLoanNum = parsed;
+        }
+      }
+    }
+    const nextLoanId = `${prefix}${String(maxLoanNum + 1).padStart(2, '0')}`;
+
     const newLoanObj: LoanItem = {
-      id: `LOAN-${isCompanyLoaned ? 'EMP-' : ''}${String(loans.length + 1).padStart(2, '0')}`,
+      id: nextLoanId,
       name: title,
       lender: isCompanyLoaned ? 'Bid Exact LLC' : newLenderName,
       direction: loanCategory,
@@ -719,29 +563,6 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Automated Notification Service Button */}
-          <button
-            onClick={() => setIsNotificationSettingsOpen(true)}
-            className={`h-9 px-3 rounded-md text-xs font-mono font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-sm border ${
-              overdueAlerts.length > 0
-                ? 'bg-[#ffb4ab]/15 border-[#ffb4ab]/40 text-[#ffb4ab] hover:bg-[#ffb4ab]/25 animate-pulse'
-                : 'bg-[#171f33] hover:bg-[#222a3d] border-[#222a3d] text-[#dae2fd]'
-            }`}
-            title="Automated Desktop & Email Overdue Payment Notification Service"
-          >
-            {overdueAlerts.length > 0 ? (
-              <BellRing className="w-4 h-4 text-[#ffb4ab]" />
-            ) : (
-              <Bell className="w-4 h-4 text-[#38bdf8]" />
-            )}
-            <span>Alerts &amp; Desktop Notifier</span>
-            {overdueAlerts.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-[#ffb4ab] text-[#0b1326] text-[10px] font-bold">
-                {overdueAlerts.length} Overdue
-              </span>
-            )}
-          </button>
-
           <button
             onClick={() => {
               setLoanCategory('company_loaned_out');
@@ -769,202 +590,6 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Automated Overdue Loan Payment Notification Banner */}
-      {overdueAlerts.filter(a => !dismissedAlertLoanIds.includes(a.loanId)).length > 0 && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-[#2c1517] via-[#1a111a] to-[#131b2e] border border-[#ffb4ab]/40 shadow-xl animate-in fade-in duration-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-[#ffb4ab]/20 text-[#ffb4ab] border border-[#ffb4ab]/30 mt-0.5 flex-shrink-0 animate-bounce">
-                <BellRing className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-white font-mono text-sm">
-                    ⚠️ AUTOMATED ALERT: {overdueAlerts.filter(a => !dismissedAlertLoanIds.includes(a.loanId)).length} Monthly Loan Payment(s) &ge; 3 Days Overdue
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#ffb4ab] text-[#0b1326] text-[10px] font-bold font-mono">
-                    ACTION REQUIRED
-                  </span>
-                  <span className="text-[11px] text-[#86948a] font-mono">
-                    Auto-Dispatched to Desktop &amp; Email ({notificationSettings.adminAlertEmail})
-                  </span>
-                </div>
-
-                <div className="mt-2 space-y-1 text-xs">
-                  {overdueAlerts
-                    .filter(a => !dismissedAlertLoanIds.includes(a.loanId))
-                    .map(alert => (
-                      <div
-                        key={alert.loanId}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded bg-[#0b1326]/80 border border-[#ffb4ab]/20 font-mono"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#ffb4ab] font-bold">[{alert.daysOverdue} DAYS OVERDUE]</span>
-                          <span className="text-white font-semibold">{alert.borrowerName}</span>
-                          <span className="text-[#86948a]">({alert.loanName})</span>
-                          <span className="text-[#ffb4ab] font-bold">
-                            &bull; Amount Due: ${alert.monthlyPayment.toLocaleString()}
-                          </span>
-                          <span className="text-[#86948a] text-[11px]">
-                            (Scheduled: {alert.nextPaymentDue})
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <button
-                            onClick={() => {
-                              setSelectedLoanId(alert.loanId);
-                              setPayLoanId(alert.loanId);
-                              setPayAmount(alert.monthlyPayment.toString());
-                              setPayMethod(alert.repaymentMethod);
-                              setIsPaymentModalOpen(true);
-                            }}
-                            className="px-2.5 py-1 rounded bg-[#4edea3] hover:bg-[#40cf95] text-[#003824] font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
-                          >
-                            <CreditCard className="w-3 h-3" />
-                            <span>Collect ${alert.monthlyPayment}</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              const existingLog = notificationLogs.find(l => l.loanId === alert.loanId);
-                              const { subject, bodyHtml } = LoanNotificationService.generateEmailAlertContent(alert, notificationSettings.adminAlertEmail);
-                              const logToPreview: NotificationLogItem = existingLog || {
-                                id: `PREVIEW-${alert.loanId}`,
-                                timestamp: new Date().toISOString(),
-                                loanId: alert.loanId,
-                                loanName: alert.loanName,
-                                borrowerName: alert.borrowerName,
-                                borrowerEmail: alert.borrowerEmail,
-                                recipientEmail: notificationSettings.adminAlertEmail,
-                                daysOverdue: alert.daysOverdue,
-                                amountDue: alert.monthlyPayment,
-                                channels: ['browser_desktop', 'email_smtp', 'in_app'],
-                                status: 'desktop_displayed',
-                                summary: `Automated 3-day overdue payment alert for ${alert.borrowerName}`,
-                                emailSubject: subject,
-                                emailBodyHtml: bodyHtml,
-                              };
-                              setSelectedLogForEmailPreview(logToPreview);
-                              setIsEmailPreviewOpen(true);
-                            }}
-                            className="px-2 py-1 rounded bg-[#171f33] hover:bg-[#222a3d] border border-[#38bdf8]/30 text-[#38bdf8] text-[11px] flex items-center gap-1 cursor-pointer"
-                            title="View HTML email alert dispatched"
-                          >
-                            <Mail className="w-3 h-3" />
-                            <span>View Email</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              LoanNotificationService.triggerDesktopNotification(alert);
-                              LoanNotificationService.playAlertSound();
-                              setActiveDesktopToast(alert);
-                              setLastCheckMessage(`Dispatched desktop notification alert for ${alert.borrowerName} (${alert.daysOverdue} days overdue).`);
-                            }}
-                            className="px-2 py-1 rounded bg-[#1e293b] hover:bg-[#334155] text-[#38bdf8] text-[11px] flex items-center gap-1 cursor-pointer"
-                            title="Re-send desktop popup to screen"
-                          >
-                            <Bell className="w-3 h-3" />
-                            <span>Notify Screen</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDismissedAlertLoanIds(prev => [...prev, alert.loanId]);
-                            }}
-                            className="text-[#86948a] hover:text-white text-xs px-1 cursor-pointer"
-                            title="Acknowledge & dismiss banner"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 border-t md:border-t-0 md:border-l border-[#ffb4ab]/20 pt-2 md:pt-0 md:pl-4">
-              <button
-                onClick={handleTriggerTestAlert}
-                className="px-3 py-1 rounded-lg bg-[#ffb4ab]/15 hover:bg-[#ffb4ab]/25 border border-[#ffb4ab]/40 text-[#ffb4ab] text-xs font-mono flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                title="Pop desktop notification now"
-              >
-                <BellRing className="w-3.5 h-3.5" />
-                <span>Test Desktop Alert</span>
-              </button>
-              <button
-                onClick={() => setIsNotificationSettingsOpen(true)}
-                className="px-3 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#ffb4ab]/30 text-white text-xs font-mono flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-              >
-                <Bell className="w-3.5 h-3.5 text-[#ffb4ab]" />
-                <span>Notification Settings</span>
-              </button>
-              <button
-                onClick={() => setIsAlertHistoryOpen(true)}
-                className="text-[11px] font-mono text-[#38bdf8] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <History className="w-3 h-3" />
-                <span>Audit Logs ({notificationLogs.length})</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Browser Desktop Notification Permission Banner */}
-      {browserPermission !== 'granted' && (
-        <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#172554] via-[#1e1b4b] to-[#131b2e] border border-[#38bdf8]/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/30 flex-shrink-0">
-              <BellRing className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-white font-mono flex items-center gap-2">
-                <span>Browser Desktop Notifications: Permission {browserPermission.toUpperCase()}</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/40">
-                  3-Day Overdue Rule
-                </span>
-              </h4>
-              <p className="text-[11px] text-[#94a3b8] mt-0.5">
-                Enable browser desktop alerts so 3-day overdue payment notifications appear automatically on your desktop without checking email.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              type="button"
-              onClick={handleEnableDesktopNotifications}
-              className="px-3.5 py-1.5 rounded-lg bg-[#38bdf8] hover:bg-[#0284c7] text-[#0b1326] font-bold text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow transition-all"
-            >
-              <Bell className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Enable Desktop Alerts</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleTriggerTestAlert}
-              className="px-3 py-1.5 rounded-lg bg-[#1e293b] hover:bg-[#334155] border border-[#38bdf8]/30 text-[#dae2fd] text-xs font-mono cursor-pointer transition-colors"
-            >
-              <span>Test Desktop Alert</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Quick feedback message from manual trigger or permission test */}
-      {lastCheckMessage && (
-        <div className="p-3 rounded-lg bg-[#0b1326] border border-[#222a3d] text-xs font-mono flex items-center justify-between text-[#dae2fd]">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-[#38bdf8] flex-shrink-0" />
-            <span>{lastCheckMessage}</span>
-          </div>
-          <button
-            onClick={() => setLastCheckMessage(null)}
-            className="text-[#86948a] hover:text-white ml-2 text-sm font-bold cursor-pointer"
-          >
-            &times;
-          </button>
-        </div>
-      )}
 
       {/* KPI Cards: Tailored for Company Loans to People vs Corporate Bank Debt */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -2267,112 +1892,6 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
         </div>
       )}
 
-      {/* Automated Notification Settings Modal */}
-      {isNotificationSettingsOpen && (
-        <LoanNotificationSettingsModal
-          settings={notificationSettings}
-          browserPermission={browserPermission}
-          onUpdateSettings={(newSettings) => {
-            setNotificationSettings(newSettings);
-            LoanNotificationService.saveSettings(newSettings);
-          }}
-          onRequestPermission={handleEnableDesktopNotifications}
-          onTriggerTestAlert={handleTriggerTestAlert}
-          onClose={() => setIsNotificationSettingsOpen(false)}
-        />
-      )}
-
-      {/* Automated Notification Audit Logs Modal */}
-      {isAlertHistoryOpen && (
-        <LoanNotificationAuditModal
-          logs={notificationLogs}
-          onClose={() => setIsAlertHistoryOpen(false)}
-          onClearLogs={() => {
-            LoanNotificationService.clearLogs();
-            setNotificationLogs([]);
-          }}
-          onPreviewEmail={(log) => {
-            setSelectedLogForEmailPreview(log);
-            setIsEmailPreviewOpen(true);
-          }}
-          onRetriggerDesktop={(log) => {
-            const alertToRetrigger: OverdueLoanAlert = {
-              loanId: log.loanId,
-              loanName: log.loanName,
-              borrowerName: log.borrowerName,
-              borrowerEmail: log.borrowerEmail,
-              monthlyPayment: log.amountDue,
-              currentBalance: log.amountDue * 4,
-              nextPaymentDue: new Date(Date.now() - log.daysOverdue * 86400000).toISOString().slice(0, 10),
-              daysOverdue: log.daysOverdue,
-              direction: 'company_loaned_out',
-              repaymentMethod: 'Payroll Deduction',
-              alertType: 'CRITICAL_OVERDUE',
-            };
-            LoanNotificationService.triggerDesktopNotification(alertToRetrigger);
-            LoanNotificationService.playAlertSound();
-            setActiveDesktopToast(alertToRetrigger);
-            setLastCheckMessage(`Re-triggered desktop alert for ${log.borrowerName}.`);
-          }}
-        />
-      )}
-
-      {/* Email Alert Preview Modal */}
-      {isEmailPreviewOpen && selectedLogForEmailPreview && (
-        <LoanEmailPreviewModal
-          logItem={selectedLogForEmailPreview}
-          onClose={() => {
-            setIsEmailPreviewOpen(false);
-            setSelectedLogForEmailPreview(null);
-          }}
-          onResend={(log) => {
-            setLastCheckMessage(`Simulated email notice re-sent to ${log.recipientEmail}.`);
-          }}
-        />
-      )}
-
-      {/* Persistent Floating Desktop Notification Toast */}
-      {activeDesktopToast && (
-        <LoanDesktopNotificationToast
-          alert={activeDesktopToast}
-          adminEmail={notificationSettings.adminAlertEmail}
-          onDismiss={() => setActiveDesktopToast(null)}
-          onCollectPayment={(alert) => {
-            setSelectedLoanId(alert.loanId);
-            setPayLoanId(alert.loanId);
-            setPayAmount(alert.monthlyPayment.toString());
-            setPayMethod(alert.repaymentMethod);
-            setIsPaymentModalOpen(true);
-            setActiveDesktopToast(null);
-          }}
-          onViewEmail={(alert) => {
-            const existingLog = notificationLogs.find((l) => l.loanId === alert.loanId);
-            const { subject, bodyHtml } = LoanNotificationService.generateEmailAlertContent(
-              alert,
-              notificationSettings.adminAlertEmail
-            );
-            const logItem: NotificationLogItem = existingLog || {
-              id: `TOAST-${alert.loanId}`,
-              timestamp: new Date().toISOString(),
-              loanId: alert.loanId,
-              loanName: alert.loanName,
-              borrowerName: alert.borrowerName,
-              borrowerEmail: alert.borrowerEmail,
-              recipientEmail: notificationSettings.adminAlertEmail,
-              daysOverdue: alert.daysOverdue,
-              amountDue: alert.monthlyPayment,
-              channels: ['browser_desktop', 'email_smtp', 'in_app'],
-              status: 'desktop_displayed',
-              summary: `Automated alert for ${alert.borrowerName}`,
-              emailSubject: subject,
-              emailBodyHtml: bodyHtml,
-            };
-            setSelectedLogForEmailPreview(logItem);
-            setIsEmailPreviewOpen(true);
-          }}
-        />
-      )}
-
       {/* Automatically Generated Official Loan Payment PDF Receipt Modal */}
       {isReceiptModalOpen && activeReceiptData && (
         <LoanPaymentReceiptModal
@@ -2381,9 +1900,7 @@ export const LoanManagementView: React.FC<LoanManagementViewProps> = ({
             setIsReceiptModalOpen(false);
             setActiveReceiptData(null);
           }}
-          onEmailReceipt={(rcpt) => {
-            setLastCheckMessage(`✅ Official PDF Receipt #${rcpt.receiptNumber} successfully transmitted to ${rcpt.borrowerEmail || 'staff member'}.`);
-          }}
+          onEmailReceipt={() => {}}
         />
       )}
     </div>

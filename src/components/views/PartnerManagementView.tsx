@@ -56,8 +56,22 @@ export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
     const partner = partners.find((p) => p.id === selectedPartnerId);
     if (!partner) return;
 
+    // Extract highest existing distribution number to prevent collision
+    let maxDistNum = 5;
+    for (const p of payouts) {
+      const match = p.id.match(/DIST-2024-(\d+)/i);
+      if (match) {
+        const parsed = parseInt(match[1], 10);
+        if (!isNaN(parsed) && parsed > maxDistNum) {
+          maxDistNum = parsed;
+        }
+      }
+    }
+    const nextDistNum = maxDistNum + 1;
+    const generatedId = `DIST-2024-${String(nextDistNum).padStart(2, '0')}`;
+
     const payoutRecord: PartnerPayoutRecord = {
-      id: `DIST-2024-0${payouts.length + 1}`,
+      id: generatedId,
       partnerId: partner.id,
       partnerName: partner.name,
       date: new Date().toISOString().slice(0, 10),
@@ -317,8 +331,8 @@ export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#222a3d]">
-              {payouts.map((p) => (
-                <tr key={p.id} className="hover:bg-[#171f33]/60 transition-colors">
+              {payouts.map((p, idx) => (
+                <tr key={`${p.id}-${idx}`} className="hover:bg-[#171f33]/60 transition-colors">
                   <td className="py-3 px-4 font-mono">
                     <div className="font-semibold text-white">{p.id}</div>
                     <div className="text-[11px] text-[#86948a]">{p.date}</div>

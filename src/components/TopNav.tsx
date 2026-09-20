@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   Clock,
   X,
-  Menu
+  Menu,
+  CalendarClock
 } from 'lucide-react';
 
 interface TopNavProps {
@@ -24,6 +25,8 @@ interface TopNavProps {
   onSelectPeriod: (period: string) => void;
   notificationCount: number;
   onToggleMobileMenu?: () => void;
+  onNavigateToReminders?: () => void;
+  urgentReminderCount?: number;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -35,6 +38,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   onSelectPeriod,
   notificationCount,
   onToggleMobileMenu,
+  onNavigateToReminders,
+  urgentReminderCount = 0,
 }) => {
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -303,6 +308,20 @@ export const TopNav: React.FC<TopNavProps> = ({
                     </p>
                   </div>
                 ))}
+              </div>
+
+              <div className="p-2 border-t border-[#222a3d] bg-[#0b1326]">
+                <button
+                  id="btn-nav-to-reminders-from-notifs"
+                  onClick={() => {
+                    setShowNotifications(false);
+                    onNavigateToReminders?.();
+                  }}
+                  className="w-full py-1.5 px-3 rounded bg-[#1f2b48] hover:bg-[#28375c] text-xs font-semibold text-[#4edea3] flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <CalendarClock className="w-3.5 h-3.5" />
+                  <span>Company Reminders ({urgentReminderCount > 0 ? `${urgentReminderCount} Urgent` : 'Schedule & Filings'})</span>
+                </button>
               </div>
             </div>
           )}

@@ -302,6 +302,28 @@ export interface TeamTargetRule {
   splitType: 'equal_split' | 'hours_weighted';
   members: TeamMemberShare[];
   notes?: string;
+  useCustomRates?: boolean;
+  salesCommissionRatePercent?: number;
+  recurringClientRatePercent?: number;
+  serviceBonusRatePercent?: number;
+}
+
+export interface CommissionSettingsState {
+  globalSalesRate: number; // e.g. 5.0%
+  globalRecurringRate: number; // e.g. 2.5%
+  globalServiceBonus24h: number; // e.g. 1.5% or $500
+  globalServiceBonus48h: number; // e.g. 2.5% or $1000
+  globalServiceBonus72h: number; // e.g. 4.0% or $1500
+  serviceBonusMode: 'percentage' | 'flat_dollar';
+  deductStripeFees: boolean;
+  defaultPaymentMethod: 'credit_card' | 'ach_debit' | 'wire_transfer';
+  clawbackWindowDays: number;
+  requireZeroQaErrors: boolean;
+  percentageBasis: 'contract_value' | 'gross_margin';
+  teams: TeamTargetRule[];
+  lastUpdated: string;
+  updatedBy: string;
+  version: number;
 }
 
 export interface ServiceEarlySubmissionRule {
@@ -549,5 +571,56 @@ export interface ArchivedDeliverableItem {
     signers: string;
   };
   fileSize: string;
+}
+
+// ==========================================
+// COMPANY REMINDERS & COMPLIANCE COMMAND TYPES
+// ==========================================
+export type ReminderCategory =
+  | 'tax_compliance' // Corporate tax, 941, sales tax, 1099, franchise filings
+  | 'client_calls' // Follow-ups with General Contractors, AR billing calls, milestone reviews
+  | 'bids_rfis' // Bid deadlines, RFI expirations, addenda cutoffs, pre-bid walk
+  | 'payroll_hr' // Payroll cutoffs, subcontractor COI renewals, commissions, benefits
+  | 'finance_legal'; // Debt installment, insurance policy renewals, licenses, reserve health check
+
+export type ReminderPriority = 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
+export type ReminderStatus = 'pending' | 'in_progress' | 'completed' | 'snoozed';
+export type ReminderFrequency = 'one_time' | 'daily' | 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly' | 'annual';
+
+export interface CompanyReminderItem {
+  id: string;
+  title: string;
+  category: ReminderCategory;
+  dueDate: string; // YYYY-MM-DD
+  dueTime?: string; // e.g. "2:00 PM EST"
+  priority: ReminderPriority;
+  status: ReminderStatus;
+  description: string;
+  assignee: {
+    name: string;
+    role: string;
+    avatarColor?: string;
+    initials?: string;
+  };
+  relatedEntity?: {
+    type: 'client' | 'bid' | 'rfi' | 'tax_agency' | 'vendor' | 'partner';
+    name: string;
+    contactPerson?: string;
+    phone?: string;
+    email?: string;
+    referenceId?: string;
+  };
+  statutoryAgency?: string; // e.g. 'IRS EFTPS', 'State Comptroller / Dept of Revenue', 'Secretary of State'
+  taxFormNumber?: string; // e.g. 'Form 1120-S', 'Form 941', '1099-NEC', 'Form 940'
+  monetaryAmount?: number; // Estimated liability, invoice amount, or bid value
+  frequency: ReminderFrequency;
+  completedAt?: string;
+  completedBy?: string;
+  filingConfirmationNumber?: string;
+  callOutcomeNote?: string;
+  snoozedUntil?: string;
+  actionUrlOrTab?: string;
+  actionLabel?: string;
+  tags: string[];
 }
 

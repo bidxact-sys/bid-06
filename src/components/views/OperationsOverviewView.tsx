@@ -12,7 +12,10 @@ import {
   Layers,
   Sparkles,
   ArrowUpRight,
-  AlertTriangle
+  AlertTriangle,
+  CalendarClock,
+  PhoneCall,
+  Landmark
 } from 'lucide-react';
 import { NavTabId } from '../Sidebar';
 
@@ -198,6 +201,20 @@ export const OperationsOverviewView: React.FC<OperationsOverviewViewProps> = ({
               </button>
 
               <button
+                onClick={() => onNavigateTab('company-reminders')}
+                className="p-3 bg-[#131b2e] hover:bg-[#1a253d] border border-[#4edea3]/40 rounded-lg text-left transition-all group cursor-pointer shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <CalendarClock className="w-4 h-4 text-[#4edea3]" />
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#f43f5e]/20 text-[#f43f5e] font-bold border border-[#f43f5e]/30">
+                    URGENT DUE
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-white">Company Reminders</div>
+                <div className="text-[10px] text-[#4edea3] mt-0.5">Taxes, Client Calls & Filings</div>
+              </button>
+
+              <button
                 onClick={() => onNavigateTab('invoices')}
                 className="p-3 bg-[#0b1326] hover:bg-[#171f33] border border-[#222a3d] hover:border-[#4edea3]/40 rounded-lg text-left transition-all group cursor-pointer"
               >
@@ -248,6 +265,26 @@ export const OperationsOverviewView: React.FC<OperationsOverviewViewProps> = ({
             </div>
 
             <div className="space-y-3">
+              <div className="p-3.5 bg-[#131b2e] border border-[#f43f5e]/40 rounded-lg flex items-start justify-between gap-4 shadow-sm">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#f43f5e]/20 text-[#f43f5e] border border-[#f43f5e]/30 animate-pulse">
+                      COMPLIANCE & CALLS DUE
+                    </span>
+                    <span className="text-xs font-semibold text-white">Q3 Federal Corporate Tax ($42.5k) & Turner Client Call</span>
+                  </div>
+                  <p className="text-xs text-[#86948a]">
+                    IRS Form 1120-S estimated tax deposit due via EFTPS. Scheduled follow-up call with David Miller (Turner Construction) on BID-8849 ($2.45M).
+                  </p>
+                </div>
+                <button
+                  onClick={() => onNavigateTab('company-reminders')}
+                  className="px-3 py-1.5 bg-[#f43f5e]/15 hover:bg-[#f43f5e]/25 text-xs font-mono text-[#f43f5e] font-bold rounded border border-[#f43f5e]/40 shrink-0 cursor-pointer"
+                >
+                  Manage Reminders →
+                </button>
+              </div>
+
               <div className="p-3.5 bg-[#0b1326] border border-[#222a3d] rounded-lg flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Wallet } from 'lucide-react';
 import {
   INITIAL_METRICS,
@@ -24,6 +24,7 @@ import { CompanyFinanceGlView } from './components/views/CompanyFinanceGlView';
 import { InflowOutflowView } from './components/views/InflowOutflowView';
 import { EmployeeHrView } from './components/views/EmployeeHrView';
 import { SalaryPayrollView } from './components/views/SalaryPayrollView';
+import { CommissionSettingsView } from './components/views/CommissionSettingsView';
 import { LoanManagementView } from './components/views/LoanManagementView';
 import { PartnerManagementView } from './components/views/PartnerManagementView';
 import { EmergencyFundView } from './components/views/EmergencyFundView';
@@ -39,6 +40,7 @@ import { CapTableView } from './components/views/CapTableView';
 import { AuditSettingsView } from './components/views/AuditSettingsView';
 import { CompanyDetailView } from './components/views/CompanyDetailView';
 import { ClientPortalView } from './components/views/ClientPortalView';
+import { CompanyRemindersView } from './components/views/CompanyRemindersView';
 
 // Enterprise ERP Initial System Data
 import {
@@ -51,6 +53,7 @@ import {
   INITIAL_PARTNER_PAYOUTS,
   INITIAL_EMERGENCY_FUND,
 } from './data/systemData';
+import { INITIAL_COMPANY_REMINDERS } from './data/reminderData';
 import {
   CashTransaction,
   EmployeeItem,
@@ -60,7 +63,13 @@ import {
   PartnerItem,
   PartnerPayoutRecord,
   EmergencyFundState,
+  CommissionSettingsState,
+  CompanyReminderItem,
 } from './types';
+import {
+  getCommissionSettings,
+  saveCommissionSettings,
+} from './utils/financialRulesEngine';
 
 // Modals
 import { DeltaTakeoffModal } from './components/DeltaTakeoffModal';
@@ -73,7 +82,6 @@ import { ClientDetailModal } from './components/ClientDetailModal';
 import { ExportPdfModal } from './components/ExportPdfModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
-import { LoanNotificationService } from './services/loanNotificationService';
 
 export default function App() {
   // Workspace state: defaults to pre-con-estimating (Enterprise Operations)
@@ -100,6 +108,29 @@ export default function App() {
   const [partners, setPartners] = useState<PartnerItem[]>(INITIAL_PARTNERS);
   const [partnerPayouts, setPartnerPayouts] = useState<PartnerPayoutRecord[]>(INITIAL_PARTNER_PAYOUTS);
   const [emergencyFund, setEmergencyFund] = useState<EmergencyFundState>(INITIAL_EMERGENCY_FUND);
+
+  // Company Reminders & Compliance State
+  const [reminders, setReminders] = useState<CompanyReminderItem[]>(INITIAL_COMPANY_REMINDERS);
+
+  const handleUpdateReminder = (updated: CompanyReminderItem) => {
+    setReminders((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  };
+
+  const handleAddReminder = (newReminder: CompanyReminderItem) => {
+    setReminders((prev) => [newReminder, ...prev]);
+  };
+
+  const urgentReminderCount = useMemo(() => {
+    return reminders.filter((r) => r.priority === 'URGENT' && r.status !== 'completed').length;
+  }, [reminders]);
+
+  // Commission & Incentive Rules State (Persisted)
+  const [commissionRules, setCommissionRules] = useState<CommissionSettingsState>(() => getCommissionSettings());
+
+  const handleSaveCommissionRules = (updatedRules: CommissionSettingsState) => {
+    setCommissionRules(updatedRules);
+    saveCommissionSettings(updatedRules);
+  };
 
   // Modals state
   const [isDeltaModalOpen, setIsDeltaModalOpen] = useState(false);
@@ -286,7 +317,24 @@ export default function App() {
     updatedPartner: PartnerItem,
     outflowTxn: CashTransaction
   ) => {
-    setPartnerPayouts((prev) => [payout, ...prev]);
+    setPartnerPayouts((prev) => {
+      let uniqueId = payout.id;
+      if (prev.some((p) => p.id === uniqueId)) {
+        let maxNum = 5;
+        for (const p of prev) {
+          const match = p.id.match(/DIST-2024-(\d+)/i);
+          if (match) {
+            const parsed = parseInt(match[1], 10);
+            if (!isNaN(parsed) && parsed > maxNum) {
+              maxNum = parsed;
+            }
+          }
+        }
+        uniqueId = `DIST-2024-${String(maxNum + 1).padStart(2, '0')}`;
+      }
+      const record = uniqueId === payout.id ? payout : { ...payout, id: uniqueId };
+      return [record, ...prev];
+    });
     setPartners((prev) => prev.map((p) => (p.id === updatedPartner.id ? updatedPartner : p)));
     setTransactions((prev) => [outflowTxn, ...prev]);
   };
@@ -322,9 +370,6 @@ export default function App() {
     );
   }
 
-  // Automated loan alert monitoring
-  const overdueLoanCount = LoanNotificationService.evaluateOverdueLoans(loans, 3).length;
-
   return (
     <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3]">
       {/* Top Application Bar */}
@@ -337,6 +382,8 @@ export default function App() {
         onSelectPeriod={setSelectedPeriod}
         notificationCount={notificationCount}
         onToggleMobileMenu={() => setIsMobileSidebarOpen((prev) => !prev)}
+        onNavigateToReminders={() => handleSelectTab('company-reminders')}
+        urgentReminderCount={urgentReminderCount}
       />
 
       {/* Main Body Layout (Sidebar + Content Workspace) */}
@@ -346,7 +393,7 @@ export default function App() {
           activeTab={activeTab}
           onSelectTab={handleSelectTab}
           openRfiCount={metrics.openRfiCount}
-          overdueLoanCount={overdueLoanCount}
+          urgentReminderCount={urgentReminderCount}
           onSwitchWorkspace={(ws) => {
             setActiveWorkspace(ws);
             localStorage.setItem('bid_exact_active_workspace', ws);
@@ -371,6 +418,14 @@ export default function App() {
               onOpenNewBid={() => setIsNewBidOpen(true)}
               onSelectRfi={(rfi) => setSelectedRfi(rfi)}
               onSelectBid={(bid) => setSelectedBid(bid)}
+            />
+          ) : activeTab === 'company-reminders' ? (
+            <CompanyRemindersView
+              reminders={reminders}
+              onUpdateReminder={handleUpdateReminder}
+              onAddReminder={handleAddReminder}
+              onNavigateTab={handleSelectTab}
+              onRecordCashOutflow={handleCreateTransaction}
             />
           ) : activeTab === 'workflow-automation' ? (
             <WorkflowAutomationHub />
@@ -420,6 +475,14 @@ export default function App() {
               payrollRuns={payrollRuns}
               onRunPayroll={handleRunPayroll}
               onNavigateToHr={() => handleSelectTab('hr-directory')}
+              onNavigateToCommissionSettings={() => handleSelectTab('commission-settings')}
+            />
+          ) : activeTab === 'commission-settings' ? (
+            <CommissionSettingsView
+              rules={commissionRules}
+              onSaveRules={handleSaveCommissionRules}
+              employees={employees}
+              onNavigateTab={handleSelectTab}
             />
           ) : activeTab === 'loans' ? (
             <LoanManagementView

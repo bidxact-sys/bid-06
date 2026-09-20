@@ -12,6 +12,7 @@ import {
   TeamTargetCalculationResult,
   TeamMemberPayout,
   ServiceEarlyBonusCalculationResult,
+  CommissionSettingsState,
 } from '../types';
 
 // ==========================================
@@ -504,6 +505,161 @@ export function calculateStripeFees(input: StripeFeeInput): StripeFeeResult {
 // ==========================================
 // 5. CUSTOMIZABLE COMMISSION & BONUS RULES ENGINE
 // ==========================================
+
+export const COMMISSION_SETTINGS_STORAGE_KEY = 'bidexact_commission_rules_state_v1';
+
+export const DEFAULT_COMMISSION_SETTINGS: CommissionSettingsState = {
+  globalSalesRate: 5.0, // 5.0% for new client sales acquisition
+  globalRecurringRate: 2.5, // 2.5% for recurring client accounts
+  globalServiceBonus24h: 1.5, // 1.5% for 24h early turnaround (or $500)
+  globalServiceBonus48h: 2.5, // 2.5% for 48h early turnaround (or $1000)
+  globalServiceBonus72h: 4.0, // 4.0% for 72h early turnaround (or $1500)
+  serviceBonusMode: 'percentage', // percentage mode by default
+  deductStripeFees: true, // sales rep commission is calculated strictly after Stripe fee deduction
+  defaultPaymentMethod: 'credit_card',
+  clawbackWindowDays: 90,
+  requireZeroQaErrors: true,
+  percentageBasis: 'contract_value',
+  teams: [
+    {
+      id: 'team_a',
+      name: 'Team A (Commercial & Institutional)',
+      department: 'Pre-Construction',
+      useCustomRates: true,
+      salesCommissionRatePercent: 5.5,
+      recurringClientRatePercent: 3.0,
+      serviceBonusRatePercent: 2.5,
+      targetAmount: 250000,
+      currentAchievedAmount: 268500,
+      bonusPoolAmount: 5000,
+      splitType: 'equal_split',
+      members: [
+        { employeeId: 'EMP-103', employeeName: 'Syed Ahmed', role: 'Senior Civil & Structural Estimator', department: 'Pre-Construction' },
+        { employeeId: 'EMP-106', employeeName: 'Liam Scott', role: 'Junior MEP Quantity Surveyor', department: 'Pre-Construction' },
+        { employeeId: 'EMP-102', employeeName: 'Elena Rostova', role: 'Senior BIM / VDC Specialist & Lead', department: 'VDC & BIM' },
+      ],
+      notes: 'High-density commercial, institutional, and mixed-use bid deliverables.',
+    },
+    {
+      id: 'team_b',
+      name: 'Team B (Civil & Heavy Infrastructure)',
+      department: 'Pre-Construction & Engineering',
+      useCustomRates: true,
+      salesCommissionRatePercent: 6.0,
+      recurringClientRatePercent: 2.8,
+      serviceBonusRatePercent: 3.0,
+      targetAmount: 200000,
+      currentAchievedAmount: 215000,
+      bonusPoolAmount: 4000,
+      splitType: 'equal_split',
+      members: [
+        { employeeId: 'EMP-101', employeeName: 'Marcus Vance', role: 'Managing Principal & VP Pre-Con', department: 'Executive Leadership' },
+        { employeeId: 'EMP-103', employeeName: 'Syed Ahmed', role: 'Senior Civil & Structural Estimator', department: 'Pre-Construction' },
+        { employeeId: 'EMP-104', employeeName: 'David Chen', role: 'Senior MEP Systems Quantity Surveyor', department: 'Pre-Construction' },
+      ],
+      notes: 'Highways, rail, utilities, site civil earthwork, and concrete structures.',
+    },
+    {
+      id: 'team_c',
+      name: 'Team C (MEP Systems & Special Projects)',
+      department: 'Pre-Construction & Client Relations',
+      useCustomRates: false,
+      salesCommissionRatePercent: 5.0,
+      recurringClientRatePercent: 2.5,
+      serviceBonusRatePercent: 2.0,
+      targetAmount: 180000,
+      currentAchievedAmount: 165000,
+      bonusPoolAmount: 3600,
+      splitType: 'equal_split',
+      members: [
+        { employeeId: 'EMP-104', employeeName: 'David Chen', role: 'Senior MEP Systems Quantity Surveyor', department: 'Pre-Construction' },
+        { employeeId: 'EMP-106', employeeName: 'Liam Scott', role: 'Junior MEP Quantity Surveyor', department: 'Pre-Construction' },
+        { employeeId: 'EMP-105', employeeName: 'Rachel Green', role: 'Operations & Bid Coordinator', department: 'Client Relations' },
+      ],
+      notes: 'Mechanical, electrical, plumbing, lab cleanrooms, and accelerated packages.',
+    },
+  ],
+  lastUpdated: new Date().toISOString().slice(0, 10),
+  updatedBy: 'Umer Khayam (CEO & Managing Partner)',
+  version: 1,
+};
+
+/**
+ * Retrieves the active commission settings configuration from persistent local storage,
+ * or returns the corporate default configuration.
+ */
+export function getCommissionSettings(): CommissionSettingsState {
+  if (typeof window === 'undefined') return DEFAULT_COMMISSION_SETTINGS;
+  try {
+    const raw = localStorage.getItem(COMMISSION_SETTINGS_STORAGE_KEY);
+    if (!raw) return DEFAULT_COMMISSION_SETTINGS;
+    const parsed = JSON.parse(raw) as CommissionSettingsState;
+    if (parsed && typeof parsed.globalSalesRate === 'number' && Array.isArray(parsed.teams)) {
+      return parsed;
+    }
+    return DEFAULT_COMMISSION_SETTINGS;
+  } catch (err) {
+    console.warn('Failed to load custom commission settings from localStorage:', err);
+    return DEFAULT_COMMISSION_SETTINGS;
+  }
+}
+
+/**
+ * Persists updated commission settings into localStorage, dispatches reactive event,
+ * and synchronizes with corporate financial rules.
+ */
+export function saveCommissionSettings(settings: CommissionSettingsState): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const updated: CommissionSettingsState = {
+      ...settings,
+      lastUpdated: new Date().toISOString().slice(0, 10),
+      version: (settings.version || 1) + 1,
+    };
+    localStorage.setItem(COMMISSION_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('bidexact_commission_rules_updated', { detail: updated }));
+
+    // Keep legacy financial rules config synchronized
+    saveFinancialRulesConfig({
+      salesCommission: {
+        newClientRatePercent: updated.globalSalesRate,
+        recurringClientRatePercent: updated.globalRecurringRate,
+        deductStripeFees: updated.deductStripeFees,
+        defaultPaymentMethod: updated.defaultPaymentMethod,
+        clawbackWindowDays: updated.clawbackWindowDays,
+      },
+      teams: updated.teams,
+      serviceEarlyDelivery: {
+        rewardMode: updated.serviceBonusMode,
+        tier24h: updated.globalServiceBonus24h,
+        tier48h: updated.globalServiceBonus48h,
+        tier72h: updated.globalServiceBonus72h,
+        requireZeroQaErrors: updated.requireZeroQaErrors,
+        percentageBasis: updated.percentageBasis,
+      },
+      lastUpdated: updated.lastUpdated,
+      updatedBy: updated.updatedBy,
+    });
+  } catch (err) {
+    console.error('Failed to save commission settings:', err);
+  }
+}
+
+/**
+ * Resets commission settings to initial corporate defaults.
+ */
+export function resetCommissionSettings(): CommissionSettingsState {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(COMMISSION_SETTINGS_STORAGE_KEY);
+      resetFinancialRulesConfig();
+      window.dispatchEvent(new CustomEvent('bidexact_commission_rules_updated', { detail: DEFAULT_COMMISSION_SETTINGS }));
+    } catch (err) {
+      console.error('Failed to reset commission settings:', err);
+    }
+  }
+  return DEFAULT_COMMISSION_SETTINGS;
+}
 
 export const RULES_STORAGE_KEY = 'bidexact_financial_rules_config_v1';
 

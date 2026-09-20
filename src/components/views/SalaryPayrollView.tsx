@@ -43,6 +43,7 @@ interface SalaryPayrollViewProps {
   payrollRuns: PayrollRunItem[];
   onRunPayroll: (run: PayrollRunItem, outflowTxn: CashTransaction) => void;
   onNavigateToHr: () => void;
+  onNavigateToCommissionSettings?: () => void;
 }
 
 export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
@@ -50,6 +51,7 @@ export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
   payrollRuns,
   onRunPayroll,
   onNavigateToHr,
+  onNavigateToCommissionSettings,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPaystubEmp, setSelectedPaystubEmp] = useState<EmployeeItem | null>(null);
@@ -178,7 +180,17 @@ export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
   );
 
   const handleExecutePayroll = () => {
-    const runId = `RUN-2024-${payrollRuns.length + 19}`;
+    let maxRunNum = 18;
+    for (const r of payrollRuns) {
+      const match = r.id.match(/RUN-2024-(\d+)/i);
+      if (match) {
+        const parsed = parseInt(match[1], 10);
+        if (!isNaN(parsed) && parsed > maxRunNum) {
+          maxRunNum = parsed;
+        }
+      }
+    }
+    const runId = `RUN-2024-${maxRunNum + 1}`;
     const todayStr = new Date().toISOString().slice(0, 10);
 
     const newRun: PayrollRunItem = {
@@ -231,6 +243,15 @@ export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {onNavigateToCommissionSettings && (
+            <button
+              onClick={onNavigateToCommissionSettings}
+              className="h-9 px-3.5 bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 border border-[#38bdf8]/40 rounded-md text-xs font-mono text-[#38bdf8] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Percent className="w-3.5 h-3.5" />
+              <span>Commission Settings</span>
+            </button>
+          )}
           <button
             onClick={() => setIsAdjustRulesModalOpen(true)}
             className="h-9 px-3.5 bg-[#4edea3]/10 hover:bg-[#4edea3]/20 border border-[#4edea3]/30 rounded-md text-xs font-mono text-[#4edea3] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -625,9 +646,9 @@ export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
         </p>
 
         <div className="space-y-3">
-          {payrollRuns.map((run) => (
+          {payrollRuns.map((run, idx) => (
             <div
-              key={run.id}
+              key={`${run.id}-${idx}`}
               className="p-4 bg-[#0b1326] border border-[#222a3d] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
               <div>
