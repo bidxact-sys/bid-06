@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CompanyDataImportPanel } from './CompanyDataImportPanel';
+import { AddCompanyExpenseModal, type CompanyExpense } from './AddCompanyExpenseModal';
 import {
   Landmark,
   ArrowUpRight,
@@ -100,8 +101,12 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
 
-  const filteredTransactions = INITIAL_TRANSACTIONS.filter((t) => {
+  const ledgerTransactions = [...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
+
+  const filteredTransactions = ledgerTransactions.filter((t) => {
     const matchesSearch =
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,6 +143,13 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Import Company Data</span>
+          </button>
+          <button
+            onClick={() => setIsExpenseOpen(true)}
+            className="h-9 px-3.5 bg-[#ffb4ab] hover:bg-[#ffc8c0] text-[#321313] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Add Expense</span>
           </button>
           <button
             onClick={onSwitchToPersonalFinance}
@@ -232,7 +244,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                   : 'text-[#86948a] hover:text-white'
               }`}
             >
-              All Entries ({INITIAL_TRANSACTIONS.length})
+              All Entries ({ledgerTransactions.length})
             </button>
             <button
               onClick={() => setSelectedFilter('credit')}
@@ -306,6 +318,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
         </div>
       </div>
     </div>
+    <AddCompanyExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} onAdd={(expense) => setExpenses((current) => [expense, ...current])} />
     {isImportOpen && <CompanyDataImportPanel onClose={() => setIsImportOpen(false)} />}
     </>
   );
