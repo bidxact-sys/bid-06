@@ -30,6 +30,7 @@ import { ReviewGovernanceModal } from '../wealth/ReviewGovernanceModal';
 import { WealthExportPdfModal } from '../wealth/WealthExportPdfModal';
 import { WealthAuditLogModal } from '../wealth/WealthAuditLogModal';
 import { GlobalSearchModal } from '../wealth/GlobalSearchModal';
+import { FinanceWorkflowView } from './FinanceWorkflowView';
 
 interface PersonalFinanceHubProps {
   onSwitchWorkspace: (ws: 'personal-finance' | 'pre-con-estimating') => void;
@@ -385,6 +386,8 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
               }}
               privacyMode={privacyMode}
             />
+          ) : activeTab === 'personal-cash-flow' ? (
+            <FinanceWorkflowView privacyMode={privacyMode} />
           ) : (
             /* E. Secondary Deep Modules (Cash, Investments, Real Estate, Distributions) */
             <WealthSecondaryViews
