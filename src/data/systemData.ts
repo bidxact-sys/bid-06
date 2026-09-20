@@ -877,29 +877,7 @@ export const INITIAL_EMERGENCY_FUND: EmergencyFundState = {
   monthlyAccruedInterest: 1293.33,
   vaultInstitution: 'Ally Commercial Treasury Vault (FDIC Insured)',
   accountNumberMask: '•••• 9021',
-  allocations: [
-    {
-      asset: '4-Week US Treasury Bills',
-      amount: 180000,
-      share: 56.2,
-      apy: '5.25%',
-      institution: 'StoneCastle Treasury',
-    },
-    {
-      asset: 'Ally High-Yield Commercial Vault',
-      amount: 95000,
-      share: 29.7,
-      apy: '4.85%',
-      institution: 'Ally Commercial Bank',
-    },
-    {
-      asset: 'JPMorgan Chase Overnight Repo',
-      amount: 45000,
-      share: 14.1,
-      apy: '4.40%',
-      institution: 'JPMorgan Chase N.A.',
-    },
-  ],
+  allocations: [],
   history: [
     {
       id: 'EF-101',

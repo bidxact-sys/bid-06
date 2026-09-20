@@ -266,23 +266,6 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
           />
         </div>
 
-        {/* Portfolio Breakdown by Investment Instrument */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-[#222a3d]">
-          {fundState.allocations.map((alloc, idx) => (
-            <div key={idx} className="p-3 bg-[#0b1326] border border-[#222a3d] rounded-lg">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-white">{alloc.asset}</span>
-                <span className="font-mono text-[#4edea3] text-[11px] font-bold">{alloc.apy} APY</span>
-              </div>
-              <div className="text-base font-bold font-mono text-white mt-1">
-                ${alloc.amount.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-[#86948a] mt-0.5">
-                {alloc.share}% of total fund • {alloc.institution}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Interactive Stress-Test Scenario Simulator */}
