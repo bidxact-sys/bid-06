@@ -64,10 +64,35 @@ app.post('/api/finance/transactions', async (req, res) => {
       if (!account) throw new Error('Account not found')
       const [row] = await tx.insert(financeTransactions).values({ userId: uid, accountId, scope: transactionScope, type, amount, description, transactionDate: body.transactionDate ? String(body.transactionDate) : undefined, category: body.category ? String(body.category) : null, counterparty: body.counterparty ? String(body.counterparty) : null, transferAccountId: body.transferAccountId ? positiveInteger(body.transferAccountId, 'transferAccountId') : null }).returning()
       const direction = type === 'income' || type === 'deposit' ? 1 : type === 'expense' || type === 'withdrawal' ? -1 : 0
-      if (direction) await tx.update(financeAccounts).set({ currentBalance: String(Number(account.currentBalance) + direction * Number(amount),) }).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, uid)))
+      if (direction) await tx.update(financeAccounts).set({ currentBalance: String(Number(account.currentBalance) + direction * Number(amount)) }).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, uid)))
+      if (type === 'transfer') {
+        const transferAccountId = positiveInteger(body.transferAccountId, 'transferAccountId')
+        if (transferAccountId === accountId) throw new Error('Transfer accounts must be different')
+        const [destination] = await tx.select().from(financeAccounts).where(and(eq(financeAccounts.id, transferAccountId), eq(financeAccounts.userId, uid))).limit(1)
+        if (!destination) throw new Error('Transfer destination account not found')
+        await tx.update(financeAccounts).set({ currentBalance: String(Number(account.currentBalance) - Number(amount)) }).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, uid)))
+        await tx.update(financeAccounts).set({ currentBalance: String(Number(destination.currentBalance) + Number(amount)) }).where(and(eq(financeAccounts.id, transferAccountId), eq(financeAccounts.userId, uid)))
+      }
       return row
     })
     res.status(201).json(created)
+  } catch (error) { res.status(400).json({ error: (error as Error).message }) }
+})
+app.delete('/api/finance/transactions/:id', async (req, res) => {
+  try {
+    const uid = userId(req)
+    const transactionId = positiveInteger(req.params.id, 'transaction id')
+    await db.transaction(async (tx) => {
+      const [transaction] = await tx.select().from(financeTransactions).where(and(eq(financeTransactions.id, transactionId), eq(financeTransactions.userId, uid))).limit(1)
+      if (!transaction) throw new Error('Transaction not found')
+      const direction = transaction.type === 'income' || transaction.type === 'deposit' ? -1 : transaction.type === 'expense' || transaction.type === 'withdrawal' ? 1 : 0
+      if (direction) {
+        const [account] = await tx.select().from(financeAccounts).where(and(eq(financeAccounts.id, transaction.accountId), eq(financeAccounts.userId, uid))).limit(1)
+        if (account) await tx.update(financeAccounts).set({ currentBalance: String(Number(account.currentBalance) + direction * Number(transaction.amount)) }).where(and(eq(financeAccounts.id, transaction.accountId), eq(financeAccounts.userId, uid)))
+      }
+      await tx.delete(financeTransactions).where(and(eq(financeTransactions.id, transactionId), eq(financeTransactions.userId, uid)))
+    })
+    res.status(204).send()
   } catch (error) { res.status(400).json({ error: (error as Error).message }) }
 })
 app.get('/api/finance/budgets', async (req, res) => { try { res.json(await db.select().from(financeBudgets).where(eq(financeBudgets.userId, userId(req)))) } catch (error) { res.status(400).json({ error: (error as Error).message }) } })

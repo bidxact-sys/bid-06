@@ -39,6 +39,7 @@ export const financeApi = {
   createAccount: (input: FinanceAccountInput) => request('/api/finance/accounts', { method: 'POST', body: JSON.stringify(input) }),
   listTransactions: () => request('/api/finance/transactions'),
   createTransaction: (input: FinanceTransactionInput) => request('/api/finance/transactions', { method: 'POST', body: JSON.stringify(input) }),
+  deleteTransaction: (id: number) => request<void>(`/api/finance/transactions/${id}`, { method: 'DELETE' }),
   listBudgets: () => request('/api/finance/budgets'),
   listGoals: () => request('/api/finance/goals'),
   listRecurringRules: () => request('/api/finance/recurring'),
