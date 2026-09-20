@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Wallet } from 'lucide-react';
 import {
   INITIAL_METRICS,
@@ -84,6 +84,15 @@ import { AuditLogModal } from './components/AuditLogModal';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 
 export default function App() {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return localStorage.getItem('bid_exact_theme') === 'light' ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-light', theme === 'light');
+    localStorage.setItem('bid_exact_theme', theme);
+  }, [theme]);
+
   // Workspace state: defaults to pre-con-estimating (Enterprise Operations)
   const [activeWorkspace, setActiveWorkspace] = useState<'personal-finance' | 'pre-con-estimating'>(() => {
     const saved = localStorage.getItem('bid_exact_active_workspace');
@@ -371,7 +380,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3]">
+    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
       {/* Top Application Bar */}
       <TopNav
         onOpenNewRfi={() => setIsNewRfiOpen(true)}
@@ -381,6 +390,8 @@ export default function App() {
         selectedPeriod={selectedPeriod}
         onSelectPeriod={setSelectedPeriod}
         notificationCount={notificationCount}
+        theme={theme}
+        onToggleTheme={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
         onToggleMobileMenu={() => setIsMobileSidebarOpen((prev) => !prev)}
         onNavigateToReminders={() => handleSelectTab('company-reminders')}
         urgentReminderCount={urgentReminderCount}

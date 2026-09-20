@@ -11,6 +11,46 @@
     font-family: var(--font-body);
     background-color: #0b1326;
     color: #dae2fd;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  html.theme-light body {
+    background-color: #f4f7f6;
+    color: #17211e;
+  }
+
+  html.theme-light .theme-surface,
+  html.theme-light #main-content-scroll {
+    background-color: #f4f7f6 !important;
+    color: #17211e !important;
+  }
+
+  html.theme-light #app-top-header {
+    background-color: #ffffff !important;
+    border-color: #d9e3de !important;
+  }
+
+  html.theme-light #app-top-header button,
+  html.theme-light #app-top-header kbd {
+    background-color: #f5f8f6 !important;
+    border-color: #d9e3de !important;
+    color: #34443d !important;
+  }
+
+  html.theme-light ::-webkit-scrollbar-track { background: #f4f7f6; }
+  html.theme-light ::-webkit-scrollbar-thumb { background: #c7d4ce; }
+
+  html.theme-light .theme-surface [class*="bg-[#"] {
+    background-color: #ffffff !important;
+  }
+
+  html.theme-light .theme-surface [class*="border-[#"] {
+    border-color: #d9e3de !important;
+  }
+
+  html.theme-light .theme-surface [class*="text-[#dae2fd"],
+  html.theme-light .theme-surface [class*="text-[#bbcabf"] {
+    color: #34443d !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
