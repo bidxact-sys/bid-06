@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CompanyDataImportPanel } from './CompanyDataImportPanel';
 import { AddCompanyExpenseModal, type CompanyExpense } from './AddCompanyExpenseModal';
+import type { PayrollRunItem } from '../../types';
 import {
   Landmark,
   ArrowUpRight,
@@ -19,6 +20,7 @@ import {
 
 interface CompanyFinanceGlViewProps {
   onSwitchToPersonalFinance: () => void;
+  payrollRuns: PayrollRunItem[];
 }
 
 interface GlTransaction {
@@ -97,6 +99,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
 
 export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   onSwitchToPersonalFinance,
+  payrollRuns,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
@@ -104,7 +107,18 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
 
-  const ledgerTransactions = [...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
+  const payrollExpenses = payrollRuns.map((run): GlTransaction => ({
+    id: `PAYROLL-EXP-${run.id}`,
+    date: run.payDate,
+    description: `Payroll batch ${run.period} (${run.employeeCount} employees)`,
+    category: 'Payroll Expense',
+    account: 'Payroll Reserve ••2041',
+    type: 'debit',
+    amount: run.totalGross + run.totalTaxesWithheld,
+    status: run.status === 'Paid' ? 'Reconciled' : 'Pending',
+  }));
+
+  const ledgerTransactions = [...payrollExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
 
   const filteredTransactions = ledgerTransactions.filter((t) => {
     const matchesSearch =

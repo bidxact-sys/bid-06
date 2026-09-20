@@ -294,8 +294,8 @@ export default function App() {
   };
 
   const handleRunPayroll = (newRun: PayrollRunItem, outflowTxn: CashTransaction) => {
-    setPayrollRuns((prev) => [newRun, ...prev]);
-    setTransactions((prev) => [outflowTxn, ...prev]);
+  setPayrollRuns((prev) => prev.some((run) => run.id === newRun.id || (run.period === newRun.period && run.payDate === newRun.payDate)) ? prev : [newRun, ...prev]);
+  setTransactions((prev) => prev.some((transaction) => transaction.id === outflowTxn.id || transaction.referenceNumber === outflowTxn.referenceNumber) ? prev : [outflowTxn, ...prev]);
   };
 
   const handleRecordLoanPayment = (
@@ -457,8 +457,9 @@ export default function App() {
               onNavigateTab={handleSelectTab}
             />
           ) : activeTab === 'finance' ? (
-            <CompanyFinanceGlView
-              onSwitchToPersonalFinance={() => {
+  <CompanyFinanceGlView
+  payrollRuns={payrollRuns}
+  onSwitchToPersonalFinance={() => {
                 setActiveWorkspace('personal-finance');
                 localStorage.setItem('bid_exact_active_workspace', 'personal-finance');
               }}
