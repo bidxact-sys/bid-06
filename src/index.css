@@ -88,6 +88,39 @@
   }
 }
 
+/* Responsive safety rails for dense enterprise views and data tables. */
+html, body, #root {
+  min-height: 100%;
+}
+
+img, svg, canvas, video {
+  max-width: 100%;
+}
+
+button, input, select, textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .theme-surface {
+    overflow-x: hidden;
+  }
+
+  .theme-surface table {
+    min-width: 640px;
+  }
+
+  .theme-surface [class*="min-w-["] {
+    min-width: min(100%, 100vw - 2rem) !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .theme-surface table {
+    min-width: 720px;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

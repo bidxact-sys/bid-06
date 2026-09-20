@@ -399,7 +399,7 @@ export default function App() {
       />
 
       {/* Main Body Layout (Sidebar + Content Workspace) */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Nav Sidebar */}
         <Sidebar
           activeTab={activeTab}
@@ -417,7 +417,7 @@ export default function App() {
         {/* Scrollable Main Operations Surface */}
         <main
           id="main-content-scroll"
-          className="flex-1 overflow-y-auto bg-[#0b1326] p-3 sm:p-6 space-y-4 sm:space-y-6"
+          className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-slate-950 p-3 sm:p-6 space-y-4 sm:space-y-6"
         >
           {selectedClient ? (
             /* ISOLATED COMPANY INTERFACE: When user clicks any company name, only this company's details appear */

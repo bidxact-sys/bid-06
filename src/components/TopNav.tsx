@@ -100,7 +100,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   return (
     <header
       id="app-top-header"
-      className="h-14 border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none gap-2 sm:gap-4"
+      className="h-14 min-w-0 overflow-hidden border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none gap-2 sm:gap-4"
     >
       {/* Left Area: Mobile Menu Toggle & Search Bar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
@@ -148,8 +148,8 @@ export const TopNav: React.FC<TopNavProps> = ({
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Period Selector Dropdown (hidden on very small screens, visible on md+) */}
-        <div className="relative hidden md:block">
+        {/* Period Selector Dropdown (visible when tablet and header have room) */}
+        <div className="relative hidden lg:block">
           <button
             id="btn-period-selector"
             onClick={() => setShowPeriodMenu(!showPeriodMenu)}
