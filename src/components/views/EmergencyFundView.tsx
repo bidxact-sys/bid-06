@@ -34,7 +34,6 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
   const [amount, setAmount] = useState<string>('25000');
   const [monthlyContribution, setMonthlyContribution] = useState<string>('5000');
   const [isRecurringAllocation, setIsRecurringAllocation] = useState(false);
-  const [targetAccount, setTargetAccount] = useState<string>('Treasury Bills (4.85% APY)');
   const [memo, setMemo] = useState<string>('Q3 Operating Cash Surplus Allocation');
 
   // Stress test state
@@ -70,7 +69,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
         date: new Date().toISOString().slice(0, 10),
         type: 'Deposit' as const,
         amount: amountNum,
-        description: memo || `Surplus Treasury Allocation to ${targetAccount}`,
+        description: memo || 'Surplus Treasury Allocation',
         balanceAfter: newBalance,
       },
       ...fundState.history,
@@ -86,7 +85,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
     const txn: CashTransaction = {
       id: `TXN-2024-${Math.floor(5000 + Math.random() * 5000)}`,
       date: new Date().toISOString().slice(0, 10),
-      description: `${isRecurringAllocation ? 'Recurring reserve allocation' : 'Reserve fund deposit'} - ${targetAccount}${isRecurringAllocation ? ` ($${parseFloat(monthlyContribution || '0').toLocaleString()}/month)` : ''}`,
+      description: `${isRecurringAllocation ? 'Recurring reserve allocation' : 'Reserve fund deposit'}${isRecurringAllocation ? ` ($${parseFloat(monthlyContribution || '0').toLocaleString()}/month)` : ''}`,
       category: 'Emergency & Capital Reserves',
       counterparty: 'Bid Exact Capital Reserve Trust',
       type: 'outflow', // outflow from operating cash into protected emergency reserve
@@ -495,18 +494,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
   </div>
   </div>
 
-  <div>
-  <label className="block text-[11px] font-mono text-[#86948a] mb-1">Target Reserve Instrument</label>
-                <select
-                  value={targetAccount}
-                  onChange={(e) => setTargetAccount(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded text-white focus:outline-none focus:border-[#4edea3]"
-                >
-                  <option value="US Treasury Bills (4.85% APY)">US Treasury Bills 3-Month (4.85% APY)</option>
-                  <option value="Vanguard Fed Money Market (5.15% APY)">Vanguard Fed Money Market (5.15% APY)</option>
-                  <option value="Chase High-Yield Escrow (4.25% APY)">Chase High-Yield Escrow (4.25% APY)</option>
-                </select>
-              </div>
+
 
               <div>
                 <label className="block text-[11px] font-mono text-[#86948a] mb-1">Allocation Description / Note</label>
