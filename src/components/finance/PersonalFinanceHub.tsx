@@ -283,7 +283,7 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
   // STRICT ISOLATION: When a specific company is clicked/selected, render ONLY its dedicated corporate interface
   if (currentCompany) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-700 dark:selection:text-emerald-400 theme-surface">
+      <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
         <CompanyWorkspaceView
           company={currentCompany}
           onReturnToConsolidated={() => setActiveEntityId(null)}
@@ -312,7 +312,7 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-700 dark:selection:text-emerald-400 theme-surface">
+    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
       {/* Top Universal Wealth & Entity Switcher Header */}
       <WealthTopHeader
         activeWorkspace={activeWorkspace}

@@ -13,9 +13,7 @@ import {
   Clock,
   X,
   Menu,
-  CalendarClock,
-  Sun,
-  Moon
+  CalendarClock
 } from 'lucide-react';
 
 interface TopNavProps {
@@ -26,8 +24,6 @@ interface TopNavProps {
   selectedPeriod: string;
   onSelectPeriod: (period: string) => void;
   notificationCount: number;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   onToggleMobileMenu?: () => void;
   onNavigateToReminders?: () => void;
   urgentReminderCount?: number;
@@ -41,8 +37,6 @@ export const TopNav: React.FC<TopNavProps> = ({
   selectedPeriod,
   onSelectPeriod,
   notificationCount,
-  theme,
-  onToggleTheme,
   onToggleMobileMenu,
   onNavigateToReminders,
   urgentReminderCount = 0,
@@ -138,16 +132,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-        <button
-          id="btn-theme-toggle"
-          onClick={onToggleTheme}
-          className="h-9 w-9 inline-flex items-center justify-center bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] rounded-md text-[#dae2fd] transition-colors"
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
         {/* Period Selector Dropdown (visible when tablet and header have room) */}
         <div className="relative hidden lg:block">
           <button
