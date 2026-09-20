@@ -3,11 +3,6 @@ import {
   Search,
   Bell,
   ChevronDown,
-  Plus,
-  FileQuestion,
-  FileSpreadsheet,
-  Building2,
-  Check,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -17,12 +12,7 @@ import {
 } from 'lucide-react';
 
 interface TopNavProps {
-  onOpenNewRfi: () => void;
-  onOpenNewBid: () => void;
-  onOpenNewClient: () => void;
   onOpenCommandPalette: () => void;
-  selectedPeriod: string;
-  onSelectPeriod: (period: string) => void;
   notificationCount: number;
   onToggleMobileMenu?: () => void;
   onNavigateToReminders?: () => void;
@@ -30,27 +20,14 @@ interface TopNavProps {
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
-  onOpenNewRfi,
-  onOpenNewBid,
-  onOpenNewClient,
   onOpenCommandPalette,
-  selectedPeriod,
-  onSelectPeriod,
   notificationCount,
   onToggleMobileMenu,
   onNavigateToReminders,
   urgentReminderCount = 0,
 }) => {
-  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const periods = [
-    'Q3 2024 (Active Period)',
-    'Q2 2024 (Closed)',
-    'Q1 2024 (Closed)',
-    'FY 2024 (Full Year Forecast)',
-  ];
 
   const notifications = [
     {
@@ -132,116 +109,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-        {/* Period Selector Dropdown (visible when tablet and header have room) */}
-        <div className="relative hidden lg:block">
-          <button
-            id="btn-period-selector"
-            onClick={() => setShowPeriodMenu(!showPeriodMenu)}
-            className="h-9 px-2.5 sm:px-3 bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] rounded-md text-xs font-medium text-[#dae2fd] flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5 text-[#86948a]" />
-            <span className="font-mono text-xs">{selectedPeriod}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#86948a]" />
-          </button>
-
-          {showPeriodMenu && (
-            <div
-              id="menu-period-dropdown"
-              className="absolute right-0 mt-1.5 w-60 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
-            >
-              <div className="px-3 py-1.5 text-[10px] uppercase font-mono tracking-wider text-[#86948a] border-b border-[#222a3d]">
-                Reporting Fiscal Period
-              </div>
-              {periods.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    onSelectPeriod(p);
-                    setShowPeriodMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs font-mono text-[#dae2fd] hover:bg-[#222a3d] flex items-center justify-between transition-colors"
-                >
-                  <span>{p}</span>
-                  {selectedPeriod === p && (
-                    <Check className="w-3.5 h-3.5 text-[#4edea3]" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Primary "+ Create" Button */}
-        <div className="relative">
-          <button
-            id="btn-create-primary"
-            onClick={() => setShowCreateMenu(!showCreateMenu)}
-            className="h-9 px-2.5 sm:px-3.5 bg-[#4edea3] hover:bg-[#40cf95] active:scale-[0.98] text-[#003824] rounded-md text-xs font-semibold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden sm:inline">Create</span>
-            <ChevronDown className="w-3.5 h-3.5 stroke-[2.5] opacity-75" />
-          </button>
-
-          {showCreateMenu && (
-            <div
-              id="menu-create-dropdown"
-              className="absolute right-0 mt-1.5 w-52 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl py-1.5 z-50"
-            >
-              <button
-                id="btn-menu-new-rfi"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewRfi();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#ff7886]/10 text-[#ffb4ab]">
-                  <FileQuestion className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">New Pre-Con RFI</div>
-                  <div className="text-[10px] text-[#86948a]">Formal inquiry to architect / GC</div>
-                </div>
-              </button>
-
-              <button
-                id="btn-menu-new-bid"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewBid();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#4edea3]/10 text-[#4edea3]">
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">New Proposal / Bid</div>
-                  <div className="text-[10px] text-[#86948a]">Create takeoff estimate package</div>
-                </div>
-              </button>
-
-              <button
-                id="btn-menu-new-client"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewClient();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#3b82f6]/10 text-[#adc6ff]">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">Add Client Account</div>
-                  <div className="text-[10px] text-[#86948a]">Tier-1 GC or developer profile</div>
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Notification Bell */}
         <div className="relative">
           <button

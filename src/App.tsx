@@ -93,7 +93,6 @@ export default function App() {
 
   // State
   const [activeTab, setActiveTab] = useState<NavTabId>('workflow-automation');
-  const [selectedPeriod, setSelectedPeriod] = useState('Q3 2024 (Active Period)');
   const [metrics, setMetrics] = useState<MetricSummary>(INITIAL_METRICS);
   const [rfis, setRfis] = useState<RfiItem[]>(INITIAL_RFIS);
   const [bids, setBids] = useState<BidItem[]>(INITIAL_BIDS);
@@ -376,12 +375,9 @@ export default function App() {
     <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
       {/* Top Application Bar */}
       <TopNav
-        onOpenNewRfi={() => setIsNewRfiOpen(true)}
-        onOpenNewBid={() => setIsNewBidOpen(true)}
-        onOpenNewClient={() => setIsNewClientOpen(true)}
+
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        selectedPeriod={selectedPeriod}
-        onSelectPeriod={setSelectedPeriod}
+
         notificationCount={notificationCount}
         onToggleMobileMenu={() => setIsMobileSidebarOpen((prev) => !prev)}
         onNavigateToReminders={() => handleSelectTab('company-reminders')}
