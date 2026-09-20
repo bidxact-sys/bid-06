@@ -18,7 +18,6 @@ import { PersonalFinanceHub } from './components/finance/PersonalFinanceHub';
 import { ProjectTrackingOperations } from './components/ProjectTrackingOperations';
 import type { OutsourcedProjectAssignment } from './components/OutsourcedProjectModal';
 import { WorkflowAutomationHub } from './components/workflow/WorkflowAutomationHub';
-import { EmployeeRoleLogin, RoleDashboardNotice, type EmployeeRole } from './components/EmployeeRoleLogin';
 
 // Dedicated Module Views
 import { OperationsOverviewView } from './components/views/OperationsOverviewView';
@@ -94,7 +93,6 @@ export default function App() {
 
   // State
   const [activeTab, setActiveTab] = useState<NavTabId>('workflow-automation');
-  const [employeeRole, setEmployeeRole] = useState<EmployeeRole>(() => (localStorage.getItem('bid_exact_employee_role') as EmployeeRole) || 'admin');
   const [selectedPeriod, setSelectedPeriod] = useState('Q3 2024 (Active Period)');
   const [metrics, setMetrics] = useState<MetricSummary>(INITIAL_METRICS);
   const [rfis, setRfis] = useState<RfiItem[]>(INITIAL_RFIS);
@@ -357,11 +355,8 @@ export default function App() {
 
   // Handle tab change
   const handleSelectTab = (tab: NavTabId) => {
-    const salesTabs: NavTabId[] = ['overview', 'clients', 'rfis-bids', 'proposals', 'invoices', 'messages', 'documents'];
-    const serviceTabs: NavTabId[] = ['overview', 'projects', 'contractors', 'time', 'messages', 'documents', 'company-reminders'];
-    const allowedTabs = employeeRole === 'sales' ? salesTabs : employeeRole === 'services' ? serviceTabs : null;
     setSelectedClient(null);
-    setActiveTab(allowedTabs && !allowedTabs.includes(tab) ? 'overview' : tab);
+    setActiveTab(tab);
     setIsMobileSidebarOpen(false);
   };
 
@@ -393,9 +388,7 @@ export default function App() {
         urgentReminderCount={urgentReminderCount}
       />
 
-      <EmployeeRoleLogin role={employeeRole} onChange={(role) => { setEmployeeRole(role); localStorage.setItem('bid_exact_employee_role', role); setActiveTab('overview'); }} />
-
-  {/* Main Body Layout (Sidebar + Content Workspace) */}
+      {/* Main Body Layout (Sidebar + Content Workspace) */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Nav Sidebar */}
         <Sidebar
@@ -416,7 +409,6 @@ export default function App() {
           id="main-content-scroll"
           className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#0b1326] p-3 sm:p-6 space-y-4 sm:space-y-6"
         >
-          <RoleDashboardNotice role={employeeRole} />
           {selectedClient ? (
             /* ISOLATED COMPANY INTERFACE: When user clicks any company name, only this company's details appear */
             <CompanyDetailView
