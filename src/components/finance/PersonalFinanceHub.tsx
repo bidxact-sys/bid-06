@@ -318,7 +318,6 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
         activeWorkspace={activeWorkspace}
         onSwitchWorkspace={onSwitchWorkspace}
         activeEntityId={activeEntityId}
-        onSelectEntity={handleSelectEntity}
         companies={companies}
         selectedPeriod={selectedPeriod}
         onSelectPeriod={setSelectedPeriod}
@@ -331,7 +330,7 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
       />
 
       {/* Main Split Layout: Sidebar + Operations Surface */}
-      <div className="flex-1 flex min-h-0 overflow-hidden pt-16 lg:pl-72">
+      <div className="flex-1 flex min-h-0 overflow-hidden pt-14 lg:pl-72">
         {/* Left Navigation Sidebar */}
         <WealthSidebar
           activeTab={activeTab}

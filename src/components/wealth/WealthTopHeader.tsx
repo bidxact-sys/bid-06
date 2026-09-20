@@ -3,7 +3,6 @@ import { CompanyEntity } from '../../types/wealth';
 
 interface WealthTopHeaderProps {
   activeEntityId: string | null;
-  onSelectEntity: (entityId: string | null) => void;
   companies: CompanyEntity[];
   onOpenAddCompany: () => void;
   onOpenRecordCapital: () => void;
@@ -19,7 +18,6 @@ interface WealthTopHeaderProps {
 
 export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
   activeEntityId,
-  onSelectEntity,
   companies,
   onOpenAddCompany,
   onOpenRecordCapital,
@@ -32,10 +30,8 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
   onSwitchWorkspace,
   onToggleMobileMenu,
 }) => {
-  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const workspaceRef = useRef<HTMLDivElement>(null);
   const periodRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -44,9 +40,6 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
   // Close menus on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (workspaceRef.current && !workspaceRef.current.contains(event.target as Node)) {
-        setIsWorkspaceMenuOpen(false);
-      }
       if (periodRef.current && !periodRef.current.contains(event.target as Node)) {
         setIsPeriodMenuOpen(false);
       }
@@ -66,7 +59,7 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
   ];
 
   return (
-    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-[#0b1326]/90 backdrop-blur-xl border-b border-[#222a3d] z-40 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4 shadow-sm">
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-14 bg-[#0b1326]/90 backdrop-blur-xl border-b border-[#222a3d] z-40 px-2.5 sm:px-5 flex items-center justify-between gap-2 sm:gap-3 shadow-sm">
       {/* Left: Hamburger (Mobile) + Entity Workspace Selector */}
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         {onToggleMobileMenu && (
@@ -81,11 +74,8 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
         )}
 
         {/* Workspace Dropdown */}
-        <div className="relative min-w-0" ref={workspaceRef}>
-          <div
-            onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-            className="flex items-center bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] px-2.5 sm:px-3.5 py-1.5 rounded cursor-pointer transition-colors shadow-sm"
-          >
+        <div className="relative min-w-0">
+          <div className="flex items-center bg-[#131b2e] border border-[#222a3d] px-2 sm:px-3 py-1 rounded shadow-sm">
             <div className="flex flex-col pr-1.5 sm:pr-3 min-w-0">
               <span className="hidden sm:inline font-mono text-[10px] text-[#bbcabf] uppercase tracking-wider font-semibold">
                 Selected Entity Workspace
@@ -94,93 +84,8 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
                 {activeCompany ? `${activeCompany.name} Workspace` : 'Personal Hub (Consolidated)'}
               </span>
             </div>
-            <span className="material-symbols-outlined text-[#bbcabf] text-sm shrink-0">unfold_more</span>
+            <span className="material-symbols-outlined text-[#bbcabf] text-sm shrink-0">account_balance_wallet</span>
           </div>
-
-          {/* Workspace Dropdown Menu */}
-          {isWorkspaceMenuOpen && (
-            <div className="absolute left-0 mt-2 w-80 bg-[#131b2e] border border-[#2d3449] rounded-lg shadow-2xl z-50 py-2 divide-y divide-[#222a3d] animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-3 py-1.5 text-[11px] font-mono font-bold text-[#bbcabf] uppercase">
-                Consolidated View
-              </div>
-              <div className="p-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectEntity(null);
-                    setIsWorkspaceMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs transition-colors ${
-                    activeEntityId === null
-                      ? 'bg-[#10b981]/15 text-[#4edea3] font-semibold'
-                      : 'text-[#dae2fd] hover:bg-[#171f33]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-[#4edea3]">account_balance_wallet</span>
-                    <div>
-                      <div className="font-semibold text-sm">Personal Financial Hub</div>
-                      <div className="text-[10px] text-[#bbcabf]">Consolidated multi-company overview</div>
-                    </div>
-                  </div>
-                  {activeEntityId === null && (
-                    <span className="material-symbols-outlined text-sm text-[#4edea3]">check</span>
-                  )}
-                </button>
-              </div>
-
-              <div className="px-3 py-1.5 text-[11px] font-mono font-bold text-[#bbcabf] uppercase flex items-center justify-between">
-                <span>Operating Entities ({companies.length})</span>
-                <span className="text-[10px] text-[#4edea3]">Isolated Books</span>
-              </div>
-              <div className="p-1 max-h-60 overflow-y-auto space-y-0.5">
-                {companies.map((company) => (
-                  <button
-                    key={company.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectEntity(company.id);
-                      setIsWorkspaceMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs transition-colors ${
-                      activeEntityId === company.id
-                        ? 'bg-[#222a3d] text-[#4edea3] font-semibold'
-                        : 'text-[#dae2fd] hover:bg-[#171f33]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <span className={`material-symbols-outlined text-sm ${
-                        company.color === 'primary' ? 'text-[#4edea3]' : company.color === 'secondary' ? 'text-[#adc6ff]' : 'text-[#ffb2b7]'
-                      }`}>
-                        {company.icon}
-                      </span>
-                      <div className="truncate">
-                        <div className="font-medium truncate">{company.name}</div>
-                        <div className="text-[10px] text-[#bbcabf]">{company.roleBadge} • {company.ownershipType}</div>
-                      </div>
-                    </div>
-                    <span className="font-mono text-[11px] text-[#4edea3] shrink-0 font-semibold">
-                      ${(company.equityPositionValue / 1000).toFixed(0)}k eq
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-1.5 bg-[#060e20]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsWorkspaceMenuOpen(false);
-                    onOpenAddCompany();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-[#171f33] hover:bg-[#222a3d] text-[#4edea3] border border-[#4edea3]/30 rounded text-xs font-mono font-bold transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">add_business</span>
-                  <span>+ Connect New Company Entity</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Live Engine Indicator */}
