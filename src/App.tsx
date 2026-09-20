@@ -90,6 +90,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-light', theme === 'light');
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('bid_exact_theme', theme);
   }, [theme]);
 
@@ -380,7 +381,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white flex flex-col antialiased selection:bg-emerald-500/25 selection:text-emerald-700 dark:selection:text-emerald-400 theme-surface">
       {/* Top Application Bar */}
       <TopNav
         onOpenNewRfi={() => setIsNewRfiOpen(true)}
