@@ -92,6 +92,30 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const [selectedRfiForDetail, setSelectedRfiForDetail] = useState<RfiItem | null>(null);
   const [clientResponseText, setClientResponseText] = useState('');
   const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState('');
+
+  const startStripeCheckout = async () => {
+    setStripeLoading(true);
+    setStripeError('');
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 2058175,
+          description: 'QTE-2024-041 mobilization deposit',
+          referenceId: 'QTE-2024-041-deposit',
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.url) throw new Error(result.error || 'Unable to start Stripe Checkout');
+      window.location.href = result.url;
+    } catch (error) {
+      setStripeError(error instanceof Error ? error.message : 'Unable to start Stripe Checkout');
+      setStripeLoading(false);
+    }
+  };
 
   // New RFI Modal State for External Client
   const [isNewRfiModalOpen, setIsNewRfiModalOpen] = useState(false);
@@ -1060,9 +1084,14 @@ methodology and audited by Bid Exact Senior Estimators.
               </div>
 
               <div className="flex items-center gap-2 font-mono text-xs">
-                <span className="px-2.5 py-1 rounded bg-[#4edea3]/20 text-[#4edea3] border border-[#4edea3]/30 font-bold uppercase">
-                  DEPOSIT PAID &amp; CLEARED
-                </span>
+                <button
+                  type="button"
+                  onClick={startStripeCheckout}
+                  disabled={stripeLoading}
+                  className="px-3 py-1.5 rounded-lg bg-[#635bff] hover:bg-[#5148d8] disabled:opacity-60 text-white font-bold transition-colors"
+                >
+                  {stripeLoading ? 'Opening Stripe...' : 'Pay deposit with Stripe'}
+                </button>
               </div>
             </div>
 
@@ -1085,6 +1114,8 @@ methodology and audited by Bid Exact Senior Estimators.
                 <div className="text-[10px] text-[#94a3b8]">Billed Upon Final Delivery</div>
               </div>
             </div>
+
+            {stripeError && <p className="text-xs text-red-300" role="alert">{stripeError}</p>}
 
             <div className="pt-2 flex items-center justify-between text-xs font-mono">
               <span className="text-[#94a3b8]">
