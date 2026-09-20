@@ -16,6 +16,7 @@ import { AddTransactionModal } from './AddTransactionModal';
 import { AddGoalModal } from './AddGoalModal';
 import { ImportTransactionsModal } from './ImportTransactionsModal';
 import { ConnectFinancialAccountModal } from './ConnectFinancialAccountModal';
+import { FinancialConnectionsPanel } from './FinancialConnectionsPanel';
 
 interface FinanceWorkflowViewProps {
   privacyMode: boolean;
@@ -199,6 +200,8 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
           })}
         </div>
       </section>
+
+      <FinancialConnectionsPanel />
 
       <FinanceMetricCards
         totalAssets={totals.assets}
