@@ -19,13 +19,25 @@ const statusMeta = {
 };
 
 interface FinancialConnectionsPanelProps {
-  connections: Connection[];
-  onRequest: (index: number) => void;
-  onApprove: (index: number) => void;
-  onRemove: (index: number) => void;
+  connections?: Connection[];
+  onRequest?: (index: number) => void;
+  onApprove?: (index: number) => void;
+  onRemove?: (index: number) => void;
 }
 
-export const FinancialConnectionsPanel: React.FC<FinancialConnectionsPanelProps> = ({ connections, onRequest, onApprove, onRemove }) => {
+const fallbackConnections: Connection[] = [
+  { provider: 'Wise', mode: 'company', status: 'pending', balance: '—', lastSync: 'Partner approval required' },
+  { provider: 'Payoneer', mode: 'company', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+  { provider: 'Airwallex', mode: 'company', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+  { provider: 'Mercury', mode: 'personal', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+];
+
+export const FinancialConnectionsPanel: React.FC<FinancialConnectionsPanelProps> = ({
+  connections = fallbackConnections,
+  onRequest = () => undefined,
+  onApprove = () => undefined,
+  onRemove = () => undefined,
+}) => {
   const stripeConnected = true;
 
   return (
