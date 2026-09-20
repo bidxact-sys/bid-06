@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import {
   DollarSign,
   Calendar,
@@ -220,6 +221,70 @@ export const SalaryPayrollView: React.FC<SalaryPayrollViewProps> = ({
     };
 
     onRunPayroll(newRun, outflowTxn);
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const generatedAt = new Date().toLocaleDateString();
+    const currency = (value: number) => `$${Math.round(value).toLocaleString()}`;
+
+    doc.setFillColor(11, 19, 38);
+    doc.rect(0, 0, pageWidth, 86, 'F');
+    doc.setTextColor(78, 222, 163);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bid Exact | Payroll Batch Report', 36, 36);
+    doc.setTextColor(218, 226, 253);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Payroll period: ${newRun.period}`, 36, 56);
+    doc.text(`Run: ${runId}  |  Generated: ${generatedAt}`, 36, 70);
+
+    doc.setTextColor(35, 45, 66);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Payroll summary', 36, 116);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Employees: ${employees.length}`, 36, 134);
+    doc.text(`Gross pay: ${currency(periodGrossTotal)}`, 150, 134);
+    doc.text(`Taxes withheld: ${currency(periodTaxesTotal)}`, 280, 134);
+    doc.text(`Net pay: ${currency(periodNetPayTotal)}`, 450, 134);
+
+    const columns = [36, 150, 300, 400, 500, 590, 690];
+    const headers = ['Employee', 'Employee ID', 'Regular Gross', 'Supplemental', 'Taxes', 'Deductions', 'Net Pay'];
+    doc.setFillColor(34, 42, 61);
+    doc.rect(30, 154, pageWidth - 60, 24, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    headers.forEach((header, index) => doc.text(header, columns[index], 170));
+
+    let y = 196;
+    doc.setTextColor(35, 45, 66);
+    employeeCalculations.forEach((calculation, index) => {
+      if (y > 520) {
+        doc.addPage();
+        y = 42;
+      }
+      if (index % 2 === 0) {
+        doc.setFillColor(245, 247, 250);
+        doc.rect(30, y - 12, pageWidth - 60, 22, 'F');
+      }
+      const values = [
+        calculation.emp.name,
+        calculation.emp.id,
+        currency(calculation.regularGross),
+        currency(calculation.supplementalGross),
+        currency(calculation.taxResult.totalEmployeeTaxes),
+        currency(calculation.taxResult.preTax401k + calculation.taxResult.preTaxHealth + calculation.actualLoanDeduction),
+        currency(calculation.netPay),
+      ];
+      values.forEach((value, valueIndex) => doc.text(value, columns[valueIndex], y));
+      y += 22;
+    });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Generated from the certified payroll calculations shown in Bid Exact.', 36, 560);
+    doc.save(`BidExact_Payroll_${todayStr}.pdf`);
     setIsRunModalOpen(false);
   };
 
