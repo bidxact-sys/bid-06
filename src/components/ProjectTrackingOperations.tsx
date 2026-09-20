@@ -51,6 +51,7 @@ import { OutsourcedProjectModal, type OutsourcedProjectAssignment } from './Outs
 interface ProjectTrackingOperationsProps {
   onOpenNewTakeoff?: () => void;
   onNavigateTab?: (tabId: NavTabId) => void;
+  onOutsourcedAssignment?: (assignment: OutsourcedProjectAssignment) => void;
 }
 
 // Utility helper to compute deadline urgency badge, colors, and countdown
@@ -137,7 +138,8 @@ export const getDeadlineBadge = (project: ProjectTrackItem) => {
 export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps> = ({
   onOpenNewTakeoff,
   onNavigateTab,
-}) => {
+  onOutsourcedAssignment,
+  }) => {
   // State
   const [projects, setProjects] = useState<ProjectTrackItem[]>(INITIAL_PROJECT_TRACKS);
   const [estimators, setEstimators] = useState<EstimatorWorkloadItem[]>(INITIAL_ESTIMATOR_WORKLOAD);
@@ -252,6 +254,7 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
 
   const handleCreateOutsourcedAssignment = (assignment: OutsourcedProjectAssignment) => {
     setOutsourcedAssignments((current) => [assignment, ...current]);
+    onOutsourcedAssignment?.(assignment);
     showToast(`${assignment.provider} assigned to ${assignment.project}. Approval workflow started.`);
   };
 

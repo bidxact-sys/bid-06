@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CompanyDataImportPanel } from './CompanyDataImportPanel';
 import { AddCompanyExpenseModal, type CompanyExpense } from './AddCompanyExpenseModal';
 import type { PayrollRunItem } from '../../types';
+import type { OutsourcedProjectAssignment } from '../OutsourcedProjectModal';
 import {
   Landmark,
   ArrowUpRight,
@@ -21,6 +22,7 @@ import {
 interface CompanyFinanceGlViewProps {
   onSwitchToPersonalFinance: () => void;
   payrollRuns: PayrollRunItem[];
+  outsourcedAssignments: OutsourcedProjectAssignment[];
 }
 
 interface GlTransaction {
@@ -100,6 +102,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
 export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   onSwitchToPersonalFinance,
   payrollRuns,
+  outsourcedAssignments,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
@@ -118,7 +121,18 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
     status: run.status === 'Paid' ? 'Reconciled' : 'Pending',
   }));
 
-  const ledgerTransactions = [...payrollExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
+  const outsourcedExpenses = outsourcedAssignments.map((assignment): GlTransaction => ({
+    id: `OUTSOURCE-EXP-${assignment.id}`,
+    date: assignment.startDate,
+    description: `${assignment.provider} - ${assignment.project}`,
+    category: 'Outsourced Project Services',
+    account: 'Operating Checking ••8491',
+    type: 'debit',
+    amount: assignment.budget,
+    status: assignment.status === 'Approved' ? 'Pending' : 'Pending',
+  }));
+
+  const ledgerTransactions = [...payrollExpenses, ...outsourcedExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
 
   const filteredTransactions = ledgerTransactions.filter((t) => {
     const matchesSearch =

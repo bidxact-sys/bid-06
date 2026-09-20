@@ -16,6 +16,7 @@ import { EnterpriseClientsGrid } from './components/EnterpriseClientsGrid';
 import { AccuracyGuaranteeStrip } from './components/AccuracyGuaranteeStrip';
 import { PersonalFinanceHub } from './components/finance/PersonalFinanceHub';
 import { ProjectTrackingOperations } from './components/ProjectTrackingOperations';
+import type { OutsourcedProjectAssignment } from './components/OutsourcedProjectModal';
 import { WorkflowAutomationHub } from './components/workflow/WorkflowAutomationHub';
 
 // Dedicated Module Views
@@ -103,6 +104,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<CashTransaction[]>(INITIAL_CASH_TRANSACTIONS);
   const [employees, setEmployees] = useState<EmployeeItem[]>(INITIAL_EMPLOYEES);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRunItem[]>(INITIAL_PAYROLL_RUNS);
+  const [outsourcedAssignments, setOutsourcedAssignments] = useState<OutsourcedProjectAssignment[]>([]);
   const [loans, setLoans] = useState<LoanItem[]>(INITIAL_LOANS);
   const [loanPayments, setLoanPayments] = useState<LoanPaymentRecord[]>(INITIAL_LOAN_PAYMENTS);
   const [partners, setPartners] = useState<PartnerItem[]>(INITIAL_PARTNERS);
@@ -455,9 +457,11 @@ export default function App() {
             <ProjectTrackingOperations
               onOpenNewTakeoff={() => setIsNewBidOpen(true)}
               onNavigateTab={handleSelectTab}
+              onOutsourcedAssignment={(assignment) => setOutsourcedAssignments((current) => current.some((item) => item.id === assignment.id) ? current : [assignment, ...current])}
             />
           ) : activeTab === 'finance' ? (
   <CompanyFinanceGlView
+  outsourcedAssignments={outsourcedAssignments}
   payrollRuns={payrollRuns}
   onSwitchToPersonalFinance={() => {
                 setActiveWorkspace('personal-finance');
