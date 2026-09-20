@@ -12,6 +12,7 @@ import { FinanceMetricCards } from './FinanceMetricCards';
 import { AddAccountModal } from './AddAccountModal';
 import { AddTransactionModal } from './AddTransactionModal';
 import { AddGoalModal } from './AddGoalModal';
+import { ImportTransactionsModal } from './ImportTransactionsModal';
 
 interface FinanceWorkflowViewProps {
   privacyMode: boolean;
@@ -29,6 +30,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [lastReconciled, setLastReconciled] = useState<string | null>(null);
 
   const totals = useMemo(() => {
@@ -106,13 +108,14 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
       />
 
       {activeStep === 'accounts' && <div className="space-y-4"><AccountsList accounts={accounts} privacyMode={privacyMode} onOpenAddAccount={() => setIsAccountModalOpen(true)} /><div className="flex justify-end"><button onClick={() => completeStep('accounts')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to activity</button></div></div>}
-      {activeStep === 'transactions' && <div className="space-y-4"><TransactionsList transactions={transactions} privacyMode={privacyMode} onDeleteTransaction={(id) => setTransactions((current) => current.filter((transaction) => transaction.id !== id))} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
+      {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={transactions} privacyMode={privacyMode} onDeleteTransaction={(id) => setTransactions((current) => current.filter((transaction) => transaction.id !== id))} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
       {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={goals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
       {activeStep === 'review' && <div className="space-y-4"><section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wider text-[#4edea3] font-mono font-bold">Monthly close checklist</p><h2 className="mt-1 text-lg font-bold text-[#dae2fd]">Review, reconcile, and close</h2></div><ShieldCheck className="w-5 h-5 text-[#4edea3]" /></div><div className="grid sm:grid-cols-2 gap-3 mt-5">{['All account balances reviewed', 'Pending transactions categorized', 'Budgets compared with actuals', 'Bills and goals reviewed'].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg border border-[#222a3d] bg-[#0b1326] p-3 text-xs text-[#bbcabf]"><CheckCircle2 className="w-4 h-4 text-[#4edea3]" />{item}</div>)}</div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#86948a]">{lastReconciled ? `Last closed ${lastReconciled}` : 'This month is ready for review.'}</span><button onClick={() => setLastReconciled(new Date().toLocaleDateString())} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Reconcile and close month</button></div></section><NetWorthChart data={INITIAL_NET_WORTH_HISTORY} privacyMode={privacyMode} /></div>}
 
       <AddAccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onAddAccount={(account) => setAccounts((current) => [...current, account])} />
       <AddTransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} accounts={accounts} onAddTransaction={(transaction) => setTransactions((current) => [transaction, ...current])} />
       <AddGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} onAddGoal={(goal) => setGoals((current) => [...current, goal])} />
+      <ImportTransactionsModal isOpen={isImportModalOpen} accounts={accounts} onClose={() => setIsImportModalOpen(false)} onImport={(imported) => setTransactions((current) => [...imported, ...current])} />
     </div>
   );
 };
