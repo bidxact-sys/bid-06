@@ -7,6 +7,7 @@ type Provider = 'Wise' | 'Payoneer' | 'Airwallex' | 'Mercury';
 interface ConnectFinancialAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onRequested: (provider: Provider, mode: ConnectionMode) => void;
 }
 
 const providers: { name: Provider; description: string }[] = [
@@ -16,7 +17,7 @@ const providers: { name: Provider; description: string }[] = [
   { name: 'Mercury', description: 'Balances and transaction history' },
 ];
 
-export const ConnectFinancialAccountModal: React.FC<ConnectFinancialAccountModalProps> = ({ isOpen, onClose }) => {
+export const ConnectFinancialAccountModal: React.FC<ConnectFinancialAccountModalProps> = ({ isOpen, onClose, onRequested }) => {
   const [mode, setMode] = useState<ConnectionMode>('company');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [requested, setRequested] = useState(false);
@@ -25,6 +26,7 @@ export const ConnectFinancialAccountModal: React.FC<ConnectFinancialAccountModal
 
   const submit = () => {
     if (!selectedProvider) return;
+    onRequested(selectedProvider, mode);
     setRequested(true);
   };
 

@@ -16,7 +16,7 @@ import { AddTransactionModal } from './AddTransactionModal';
 import { AddGoalModal } from './AddGoalModal';
 import { ImportTransactionsModal } from './ImportTransactionsModal';
 import { ConnectFinancialAccountModal } from './ConnectFinancialAccountModal';
-import { FinancialConnectionsPanel } from './FinancialConnectionsPanel';
+import { FinancialConnectionsPanel, type Connection } from './FinancialConnectionsPanel';
 import { ProviderConfigurationPanel } from './ProviderConfigurationPanel';
 
 interface FinanceWorkflowViewProps {
@@ -34,10 +34,24 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
   const [activeStep, setActiveStep] = useState<WorkflowStep>('accounts');
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isConnectAccountModalOpen, setIsConnectAccountModalOpen] = useState(false);
+  const [connections, setConnections] = useState<Connection[]>([
+    { provider: 'Wise', mode: 'company', status: 'pending', balance: '—', lastSync: 'Partner approval required' },
+    { provider: 'Payoneer', mode: 'company', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+    { provider: 'Airwallex', mode: 'company', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+    { provider: 'Mercury', mode: 'personal', status: 'not_connected', balance: '—', lastSync: 'Not connected' },
+  ]);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [lastReconciled, setLastReconciled] = useState<string | null>(null);
+  const requestConnection = (index: number) => setConnections((current) => current.map((connection, itemIndex) => itemIndex === index ? { ...connection, status: 'pending', lastSync: 'Awaiting partner approval' } : connection));
+  const approveConnection = (index: number) => setConnections((current) => current.map((connection, itemIndex) => itemIndex === index ? { ...connection, status: 'connected', balance: 'Awaiting first sync', lastSync: 'Approved by partner' } : connection));
+  const removeConnection = (index: number) => {
+    if (!window.confirm(`Remove ${connections[index].provider} account connection?`)) return;
+    setConnections((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+  const addRequestedConnection = (provider: Connection['provider'], mode: Connection['mode']) => setConnections((current) => current.some((connection) => connection.provider === provider) ? current.map((connection) => connection.provider === provider ? { ...connection, mode, status: 'pending', lastSync: mode === 'company' ? 'Partner approval required' : 'Ready for provider authorization' } : connection) : [...current, { provider, mode, status: mode === 'company' ? 'pending' : 'connected', balance: 'Awaiting first sync', lastSync: mode === 'company' ? 'Partner approval required' : 'Ready for provider authorization' }]);
+
   const apiEnabled = Boolean(import.meta.env.VITE_API_URL);
   const { data: remoteAccounts, error: accountsError, mutate: refreshAccounts } = useSWR<FinanceApiAccount[]>(apiEnabled ? 'finance-accounts' : null, financeApi.listAccounts);
   const { data: remoteTransactions, error: transactionsError, mutate: refreshTransactions } = useSWR<FinanceApiTransaction[]>(apiEnabled ? 'finance-transactions' : null, financeApi.listTransactions);
@@ -202,7 +216,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
         </div>
       </section>
 
-      <FinancialConnectionsPanel />
+      <FinancialConnectionsPanel connections={connections} onRequest={requestConnection} onApprove={approveConnection} onRemove={removeConnection} />
       <ProviderConfigurationPanel />
 
       <FinanceMetricCards
@@ -222,7 +236,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
       {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={displayedGoals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
       {activeStep === 'review' && <div className="space-y-4"><section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wider text-[#4edea3] font-mono font-bold">Monthly close checklist</p><h2 className="mt-1 text-lg font-bold text-[#dae2fd]">Review, reconcile, and close</h2></div><ShieldCheck className="w-5 h-5 text-[#4edea3]" /></div><div className="grid sm:grid-cols-2 gap-3 mt-5">{['All account balances reviewed', 'Pending transactions categorized', 'Budgets compared with actuals', 'Bills and goals reviewed'].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg border border-[#222a3d] bg-[#0b1326] p-3 text-xs text-[#bbcabf]"><CheckCircle2 className="w-4 h-4 text-[#4edea3]" />{item}</div>)}</div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#86948a]">{lastReconciled ? `Last closed ${lastReconciled}` : 'This month is ready for review.'}</span><button onClick={() => setLastReconciled(new Date().toLocaleDateString())} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Reconcile and close month</button></div></section><NetWorthChart data={INITIAL_NET_WORTH_HISTORY} privacyMode={privacyMode} /></div>}
 
-      <ConnectFinancialAccountModal isOpen={isConnectAccountModalOpen} onClose={() => setIsConnectAccountModalOpen(false)} />
+      <ConnectFinancialAccountModal isOpen={isConnectAccountModalOpen} onClose={() => setIsConnectAccountModalOpen(false)} onRequested={addRequestedConnection} />
       <AddAccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onAddAccount={handleAddAccount} />
       <AddTransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} accounts={displayedAccounts} onAddTransaction={handleAddTransaction} />
       <AddGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} onAddGoal={handleAddGoal} />
