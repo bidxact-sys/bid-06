@@ -16,7 +16,6 @@ import {
 // Layout and Views
 import { WealthSidebar } from '../wealth/WealthSidebar';
 import { WealthTopHeader } from '../wealth/WealthTopHeader';
-import { FloatingEntityDock } from '../wealth/FloatingEntityDock';
 import { WealthCommandDashboard } from '../wealth/WealthCommandDashboard';
 import { CompanyWorkspaceView } from '../wealth/CompanyWorkspaceView';
 import { MultiCompanyPortfolioView } from '../wealth/MultiCompanyPortfolioView';
@@ -402,18 +401,6 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
         </main>
       </div>
 
-      {/* Persistent Floating Entity Quick-Navigation Dock */}
-      <FloatingEntityDock
-        companies={companies}
-        activeEntityId={activeEntityId}
-        onSelectEntity={handleSelectEntity}
-        onOpenAddCompany={() => setIsAddCompanyOpen(true)}
-        onOpenRecordCapital={() => setIsRecordCapitalOpen(true)}
-        privacyMode={privacyMode}
-        onTogglePrivacy={() => setPrivacyMode(!privacyMode)}
-        onSwitchWorkspace={onSwitchWorkspace}
-        activeWorkspace={activeWorkspace}
-      />
 
       {/* Interactive Modal Suite */}
       <AddCompanyModal
