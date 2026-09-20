@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { financeApi, type FinanceApiAccount, type FinanceApiTransaction } from '../../services/financeApi';
+import { financeApi, type FinanceApiAccount, type FinanceApiGoal, type FinanceApiTransaction } from '../../services/financeApi';
 import { CheckCircle2, Circle, ClipboardCheck, Download, Plus, RefreshCw, ShieldCheck } from 'lucide-react';
 import { FinanceAccount, FinanceBudget, FinanceGoal, FinanceTransaction, RecurringBill } from '../../types/finance';
 import { INITIAL_ACCOUNTS, INITIAL_BUDGETS, INITIAL_NET_WORTH_HISTORY, INITIAL_TRANSACTIONS } from '../../data/financeData';
@@ -37,6 +37,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
   const apiEnabled = Boolean(import.meta.env.VITE_API_URL);
   const { data: remoteAccounts, error: accountsError, mutate: refreshAccounts } = useSWR<FinanceApiAccount[]>(apiEnabled ? 'finance-accounts' : null, financeApi.listAccounts);
   const { data: remoteTransactions, error: transactionsError, mutate: refreshTransactions } = useSWR<FinanceApiTransaction[]>(apiEnabled ? 'finance-transactions' : null, financeApi.listTransactions);
+  const { data: remoteGoals, error: goalsError, mutate: refreshGoals } = useSWR<FinanceApiGoal[]>(apiEnabled ? 'finance-goals' : null, financeApi.listGoals);
 
   const syncedAccounts = remoteAccounts?.map((account): FinanceAccount => ({
     id: String(account.id),
@@ -59,9 +60,19 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
     status: 'cleared',
     note: transaction.description,
   }));
+  const syncedGoals = remoteGoals?.map((goal): FinanceGoal => ({
+    id: String(goal.id),
+    title: goal.name,
+    targetAmount: Number(goal.targetAmount),
+    currentAmount: Number(goal.currentAmount),
+    targetDate: goal.targetDate || '',
+    category: 'general',
+    color: '#4edea3',
+  }));
   const displayedAccounts = syncedAccounts || accounts;
   const displayedTransactions = syncedTransactions || transactions;
-  const syncError = accountsError || transactionsError;
+  const displayedGoals = syncedGoals || goals;
+  const syncError = accountsError || transactionsError || goalsError;
 
   const totals = useMemo(() => {
     const assets = displayedAccounts.filter((account) => !['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
@@ -109,6 +120,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
     if (!apiEnabled) return;
     try {
       await financeApi.createGoal({ scope: 'personal', name: goal.title, targetAmount: goal.targetAmount, currentAmount: goal.currentAmount, targetDate: goal.targetDate });
+      await refreshGoals();
     } catch (error) {
       console.error('[v0] Could not persist goal:', error);
     }
@@ -199,7 +211,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
 
       {activeStep === 'accounts' && <div className="space-y-4"><AccountsList accounts={displayedAccounts} privacyMode={privacyMode} onOpenAddAccount={() => setIsAccountModalOpen(true)} /><div className="flex justify-end"><button onClick={() => completeStep('accounts')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to activity</button></div></div>}
       {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={displayedTransactions} privacyMode={privacyMode} onDeleteTransaction={handleDeleteTransaction} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
-      {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={goals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
+      {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={displayedGoals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
       {activeStep === 'review' && <div className="space-y-4"><section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wider text-[#4edea3] font-mono font-bold">Monthly close checklist</p><h2 className="mt-1 text-lg font-bold text-[#dae2fd]">Review, reconcile, and close</h2></div><ShieldCheck className="w-5 h-5 text-[#4edea3]" /></div><div className="grid sm:grid-cols-2 gap-3 mt-5">{['All account balances reviewed', 'Pending transactions categorized', 'Budgets compared with actuals', 'Bills and goals reviewed'].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg border border-[#222a3d] bg-[#0b1326] p-3 text-xs text-[#bbcabf]"><CheckCircle2 className="w-4 h-4 text-[#4edea3]" />{item}</div>)}</div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#86948a]">{lastReconciled ? `Last closed ${lastReconciled}` : 'This month is ready for review.'}</span><button onClick={() => setLastReconciled(new Date().toLocaleDateString())} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Reconcile and close month</button></div></section><NetWorthChart data={INITIAL_NET_WORTH_HISTORY} privacyMode={privacyMode} /></div>}
 
       <AddAccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onAddAccount={handleAddAccount} />
