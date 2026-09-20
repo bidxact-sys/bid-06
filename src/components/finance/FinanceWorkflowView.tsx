@@ -75,7 +75,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
     setTransactions((current) => [transaction, ...current]);
     if (!apiEnabled) return;
     const selectedAccount = displayedAccounts.find((account) => account.name === transaction.accountName);
-    if (!selectedAccount || !/^\\d+$/.test(selectedAccount.id)) return;
+    if (!selectedAccount || !/^\d+$/.test(selectedAccount.id)) return;
     try {
       await financeApi.createTransaction({
         accountId: Number(selectedAccount.id),
@@ -90,6 +90,17 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
       await Promise.all([refreshAccounts(), refreshTransactions()]);
     } catch (error) {
       console.error('[v0] Could not persist transaction:', error);
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    setTransactions((current) => current.filter((transaction) => transaction.id !== id));
+    if (!apiEnabled || !/^\d+$/.test(id)) return;
+    try {
+      await financeApi.deleteTransaction(Number(id));
+      await Promise.all([refreshAccounts(), refreshTransactions()]);
+    } catch (error) {
+      console.error('[v0] Could not delete transaction:', error);
     }
   };
 
@@ -172,19 +183,19 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
         monthlyExpenses={totals.spending}
         budgetAllocated={budgets.reduce((sum, budget) => sum + budget.allocated, 0)}
         budgetSpent={budgets.reduce((sum, budget) => sum + budget.spent, 0)}
-        liquidCash={accounts.filter((account) => account.category === 'cash').reduce((sum, account) => sum + account.balance, 0)}
+        liquidCash={displayedAccounts.filter((account) => account.category === 'cash').reduce((sum, account) => sum + account.balance, 0)}
         privacyMode={privacyMode}
       />
 
       {activeStep === 'accounts' && <div className="space-y-4"><AccountsList accounts={displayedAccounts} privacyMode={privacyMode} onOpenAddAccount={() => setIsAccountModalOpen(true)} /><div className="flex justify-end"><button onClick={() => completeStep('accounts')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to activity</button></div></div>}
-      {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={displayedTransactions} privacyMode={privacyMode} onDeleteTransaction={(id) => setTransactions((current) => current.filter((transaction) => transaction.id !== id))} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
+      {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={displayedTransactions} privacyMode={privacyMode} onDeleteTransaction={handleDeleteTransaction} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
       {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={goals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
       {activeStep === 'review' && <div className="space-y-4"><section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wider text-[#4edea3] font-mono font-bold">Monthly close checklist</p><h2 className="mt-1 text-lg font-bold text-[#dae2fd]">Review, reconcile, and close</h2></div><ShieldCheck className="w-5 h-5 text-[#4edea3]" /></div><div className="grid sm:grid-cols-2 gap-3 mt-5">{['All account balances reviewed', 'Pending transactions categorized', 'Budgets compared with actuals', 'Bills and goals reviewed'].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg border border-[#222a3d] bg-[#0b1326] p-3 text-xs text-[#bbcabf]"><CheckCircle2 className="w-4 h-4 text-[#4edea3]" />{item}</div>)}</div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#86948a]">{lastReconciled ? `Last closed ${lastReconciled}` : 'This month is ready for review.'}</span><button onClick={() => setLastReconciled(new Date().toLocaleDateString())} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Reconcile and close month</button></div></section><NetWorthChart data={INITIAL_NET_WORTH_HISTORY} privacyMode={privacyMode} /></div>}
 
       <AddAccountModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} onAddAccount={handleAddAccount} />
       <AddTransactionModal isOpen={isTransactionModalOpen} onClose={() => setIsTransactionModalOpen(false)} accounts={displayedAccounts} onAddTransaction={handleAddTransaction} />
       <AddGoalModal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} onAddGoal={(goal) => setGoals((current) => [...current, goal])} />
-      <ImportTransactionsModal isOpen={isImportModalOpen} accounts={accounts} onClose={() => setIsImportModalOpen(false)} onImport={(imported) => setTransactions((current) => [...imported, ...current])} />
+      <ImportTransactionsModal isOpen={isImportModalOpen} accounts={displayedAccounts} onClose={() => setIsImportModalOpen(false)} onImport={(imported) => setTransactions((current) => [...imported, ...current])} />
     </div>
   );
 };
