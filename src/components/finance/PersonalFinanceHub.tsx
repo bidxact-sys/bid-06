@@ -317,8 +317,6 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
       <WealthTopHeader
         activeWorkspace={activeWorkspace}
         onSwitchWorkspace={onSwitchWorkspace}
-        activeEntityId={activeEntityId}
-        companies={companies}
         selectedPeriod={selectedPeriod}
         onSelectPeriod={setSelectedPeriod}
         onOpenAddCompany={() => setIsAddCompanyOpen(true)}

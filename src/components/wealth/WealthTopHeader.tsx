@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CompanyEntity } from '../../types/wealth';
-
 interface WealthTopHeaderProps {
-  activeEntityId: string | null;
-  companies: CompanyEntity[];
   onOpenAddCompany: () => void;
   onOpenRecordCapital: () => void;
   onOpenSearch: () => void;
@@ -17,8 +13,6 @@ interface WealthTopHeaderProps {
 }
 
 export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
-  activeEntityId,
-  companies,
   onOpenAddCompany,
   onOpenRecordCapital,
   onOpenSearch,
@@ -34,8 +28,6 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const periodRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-
-  const activeCompany = companies.find((c) => c.id === activeEntityId);
 
   // Close menus on outside click
   useEffect(() => {
@@ -60,8 +52,8 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
 
   return (
     <header className="fixed top-0 left-0 lg:left-72 right-0 h-14 bg-[#0b1326]/90 backdrop-blur-xl border-b border-[#222a3d] z-40 px-2.5 sm:px-5 flex items-center justify-between gap-2 sm:gap-3 shadow-sm">
-      {/* Left: Hamburger (Mobile) + Entity Workspace Selector */}
-      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+      {/* Left: Mobile navigation control */}
+      <div className="flex items-center min-w-0">
         {onToggleMobileMenu && (
           <button
             type="button"
@@ -72,32 +64,6 @@ export const WealthTopHeader: React.FC<WealthTopHeaderProps> = ({
             <span className="material-symbols-outlined text-xl">menu</span>
           </button>
         )}
-
-        {/* Workspace Dropdown */}
-        <div className="relative min-w-0">
-          <div className="flex items-center bg-[#131b2e] border border-[#222a3d] px-2 sm:px-3 py-1 rounded shadow-sm">
-            <div className="flex flex-col pr-1.5 sm:pr-3 min-w-0">
-              <span className="hidden sm:inline font-mono text-[10px] text-[#bbcabf] uppercase tracking-wider font-semibold">
-                Selected Entity Workspace
-              </span>
-              <span className="font-['Manrope'] font-semibold text-xs sm:text-sm text-[#dae2fd] truncate max-w-[130px] xs:max-w-[190px] sm:max-w-[280px]">
-                {activeCompany ? `${activeCompany.name} Workspace` : 'Personal Hub (Consolidated)'}
-              </span>
-            </div>
-            <span className="material-symbols-outlined text-[#bbcabf] text-sm shrink-0">account_balance_wallet</span>
-          </div>
-        </div>
-
-        {/* Live Engine Indicator */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded bg-[#131b2e] border border-[#222a3d]">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4edea3] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4edea3]"></span>
-          </span>
-          <span className="font-mono text-[10px] font-bold text-[#4edea3] tracking-wider uppercase">
-            Multi-Entity Engine Live
-          </span>
-        </div>
       </div>
 
       {/* Right Actions & Utilities */}
