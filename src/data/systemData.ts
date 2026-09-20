@@ -169,6 +169,44 @@ export const INITIAL_CASH_TRANSACTIONS: CashTransaction[] = [
   },
 ];
 
+const createAdditionalEmployee = (
+  id: string,
+  name: string,
+  role: string,
+  department: EmployeeItem['department'],
+  annualSalary: number,
+  manager: string,
+): EmployeeItem => {
+  const monthlyGross = annualSalary / 12;
+  const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const federalTax = monthlyGross * 0.22;
+  const stateTax = monthlyGross * 0.07;
+  const ficaMedicare = monthlyGross * 0.0765;
+  const retirement401k = monthlyGross * 0.05;
+  const healthInsurance = 350;
+
+  return {
+    id,
+    name,
+    initials,
+    role,
+    department,
+    type: 'Full-Time W-2',
+    annualSalary,
+    monthlyGross,
+    deductions: { federalTax, stateTax, ficaMedicare, retirement401k, healthInsurance },
+    netPay: monthlyGross - federalTax - stateTax - ficaMedicare - retirement401k - healthInsurance,
+    hireDate: '2024-09-20',
+    email: `${name.toLowerCase().replace(/\\s+/g, '.')}@bidexact.com`,
+    phone: '+1 (555) 000-0000',
+    status: 'Active',
+    directDeposit: 'Chase Payroll ••2041 (Pending Verification)',
+    ptoDaysRemaining: 15,
+    performanceRating: 4.5,
+    manager,
+  };
+};
+
 export const INITIAL_EMPLOYEES: EmployeeItem[] = [
   {
     id: 'EMP-101',
@@ -352,6 +390,19 @@ export const INITIAL_EMPLOYEES: EmployeeItem[] = [
     performanceRating: 4.9,
     manager: 'Umer Khayam',
   },
+  createAdditionalEmployee('EMP-108', 'Aisha Rahman', 'Sales Manager', 'Client Relations', 110000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-109', 'Jordan Blake', 'Sales Team Lead', 'Client Relations', 88000, 'Aisha Rahman'),
+  createAdditionalEmployee('EMP-110', 'Noah Williams', 'Customer Sales Representative', 'Client Relations', 65000, 'Jordan Blake'),
+  createAdditionalEmployee('EMP-111', 'Priya Shah', 'Services Manager', 'Estimating Operations', 115000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-112', 'Miguel Torres', 'Services Team Lead', 'Estimating Operations', 92000, 'Priya Shah'),
+  createAdditionalEmployee('EMP-113', 'Olivia Martin', 'Estimation Manager', 'Estimating Operations', 125000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-114', 'Ethan Brooks', 'BIM Engineer', 'VDC & BIM', 98000, 'Elena Rostova'),
+  createAdditionalEmployee('EMP-115', 'Lena Fischer', 'Tekla Detailer', 'VDC & BIM', 82000, 'Elena Rostova'),
+  createAdditionalEmployee('EMP-116', 'Marcus Lee', 'HR & People Operations Manager', 'Finance & Legal', 90000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-117', 'Grace Wilson', 'Staff Accountant', 'Finance & Legal', 78000, 'Sarah Jenkins'),
+  createAdditionalEmployee('EMP-118', 'Daniel Kim', 'Marketing & Proposal Coordinator', 'Client Relations', 72000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-119', 'Sofia Patel', 'IT & Systems Administrator', 'Finance & Legal', 85000, 'Umer Khayam'),
+  createAdditionalEmployee('EMP-120', 'Robert Hayes', 'Contracts & Risk Manager', 'Finance & Legal', 105000, 'Umer Khayam'),
 ];
 
 export const INITIAL_PAYROLL_RUNS: PayrollRunItem[] = [

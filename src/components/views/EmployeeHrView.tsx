@@ -229,6 +229,7 @@ export const EmployeeHrView: React.FC<EmployeeHrViewProps> = ({
             >
               <option value="all">All Departments</option>
               <option value="Pre-Construction">Pre-Construction</option>
+              <option value="Estimating Operations">Estimating Operations</option>
               <option value="VDC & BIM">VDC & BIM</option>
               <option value="Executive Leadership">Executive Leadership</option>
               <option value="Client Relations">Client Relations</option>
