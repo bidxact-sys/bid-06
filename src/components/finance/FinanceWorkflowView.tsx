@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import useSWR from 'swr';
+import { financeApi, type FinanceApiAccount, type FinanceApiTransaction } from '../../services/financeApi';
 import { CheckCircle2, Circle, ClipboardCheck, Download, Plus, RefreshCw, ShieldCheck } from 'lucide-react';
 import { FinanceAccount, FinanceBudget, FinanceGoal, FinanceTransaction, RecurringBill } from '../../types/finance';
 import { INITIAL_ACCOUNTS, INITIAL_BUDGETS, INITIAL_NET_WORTH_HISTORY, INITIAL_TRANSACTIONS } from '../../data/financeData';
@@ -32,12 +34,40 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [lastReconciled, setLastReconciled] = useState<string | null>(null);
+  const apiEnabled = Boolean(import.meta.env.VITE_API_URL);
+  const { data: remoteAccounts, error: accountsError, mutate: refreshAccounts } = useSWR<FinanceApiAccount[]>(apiEnabled ? 'finance-accounts' : null, financeApi.listAccounts);
+  const { data: remoteTransactions, error: transactionsError, mutate: refreshTransactions } = useSWR<FinanceApiTransaction[]>(apiEnabled ? 'finance-transactions' : null, financeApi.listTransactions);
+
+  const syncedAccounts = remoteAccounts?.map((account): FinanceAccount => ({
+    id: String(account.id),
+    name: account.name,
+    institution: account.type,
+    category: account.type === 'credit' ? 'credit' : account.type === 'loan' ? 'loan' : 'cash',
+    balance: Number(account.currentBalance),
+    currency: account.currency,
+    accountNumberMask: 'API',
+    updatedAt: new Date().toISOString(),
+  }));
+  const syncedTransactions = remoteTransactions?.map((transaction): FinanceTransaction => ({
+    id: String(transaction.id),
+    date: transaction.transactionDate,
+    merchant: transaction.counterparty || transaction.description,
+    category: transaction.category || 'Uncategorized',
+    accountName: String(transaction.accountId),
+    amount: transaction.type === 'expense' || transaction.type === 'withdrawal' ? -Number(transaction.amount) : Number(transaction.amount),
+    type: transaction.type === 'income' ? 'income' : transaction.type === 'expense' ? 'expense' : 'transfer',
+    status: 'cleared',
+    note: transaction.description,
+  }));
+  const displayedAccounts = syncedAccounts || accounts;
+  const displayedTransactions = syncedTransactions || transactions;
+  const syncError = accountsError || transactionsError;
 
   const totals = useMemo(() => {
-    const assets = accounts.filter((account) => !['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
-    const liabilities = accounts.filter((account) => ['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
-    const income = transactions.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0);
-    const spending = Math.abs(transactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0));
+    const assets = displayedAccounts.filter((account) => !['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
+    const liabilities = displayedAccounts.filter((account) => ['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
+    const income = displayedTransactions.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0);
+    const spending = Math.abs(displayedTransactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0));
     return { assets, liabilities, netWorth: assets - liabilities, income, spending };
   }, [accounts, transactions]);
 
@@ -69,6 +99,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
 
   return (
     <div className="p-3 sm:p-5 lg:p-7 space-y-5 max-w-[1600px] mx-auto">
+      {apiEnabled && <div className={`rounded-lg border px-3 py-2 text-xs ${syncError ? 'border-[#ff7886]/40 bg-[#ff7886]/10 text-[#ffb4ab]' : 'border-[#4edea3]/30 bg-[#4edea3]/10 text-[#9af5c9]'}`}>{syncError ? 'Database sync unavailable. Showing local preview data.' : remoteAccounts || remoteTransactions ? 'Live Neon data connected.' : 'Connecting to live finance data…'}</div>}
       <section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-4 sm:p-5">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
@@ -107,8 +138,8 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
         privacyMode={privacyMode}
       />
 
-      {activeStep === 'accounts' && <div className="space-y-4"><AccountsList accounts={accounts} privacyMode={privacyMode} onOpenAddAccount={() => setIsAccountModalOpen(true)} /><div className="flex justify-end"><button onClick={() => completeStep('accounts')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to activity</button></div></div>}
-      {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={transactions} privacyMode={privacyMode} onDeleteTransaction={(id) => setTransactions((current) => current.filter((transaction) => transaction.id !== id))} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
+      {activeStep === 'accounts' && <div className="space-y-4"><AccountsList accounts={displayedAccounts} privacyMode={privacyMode} onOpenAddAccount={() => setIsAccountModalOpen(true)} /><div className="flex justify-end"><button onClick={() => completeStep('accounts')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to activity</button></div></div>}
+      {activeStep === 'transactions' && <div className="space-y-4"><div className="flex justify-end"><button onClick={() => setIsImportModalOpen(true)} className="h-9 rounded-md border border-[#2d3449] bg-[#171f33] px-3 text-xs font-semibold text-[#dae2fd]">Import CSV / OFX</button></div><TransactionsList transactions={displayedTransactions} privacyMode={privacyMode} onDeleteTransaction={(id) => setTransactions((current) => current.filter((transaction) => transaction.id !== id))} onOpenAddTransaction={() => setIsTransactionModalOpen(true)} searchQuery="" /><div className="flex justify-end"><button onClick={() => completeStep('transactions')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to planning</button></div></div>}
       {activeStep === 'plan' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-4"><BudgetsProgress budgets={budgets} privacyMode={privacyMode} /><RecurringBills bills={bills} privacyMode={privacyMode} /><FinancialGoals goals={goals} privacyMode={privacyMode} onOpenAddGoal={() => setIsGoalModalOpen(true)} onContributeGoal={() => undefined} /><div className="xl:col-span-2 flex justify-end"><button onClick={() => completeStep('plan')} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold">Continue to monthly close</button></div></div>}
       {activeStep === 'review' && <div className="space-y-4"><section className="rounded-xl border border-[#222a3d] bg-[#131b2e] p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wider text-[#4edea3] font-mono font-bold">Monthly close checklist</p><h2 className="mt-1 text-lg font-bold text-[#dae2fd]">Review, reconcile, and close</h2></div><ShieldCheck className="w-5 h-5 text-[#4edea3]" /></div><div className="grid sm:grid-cols-2 gap-3 mt-5">{['All account balances reviewed', 'Pending transactions categorized', 'Budgets compared with actuals', 'Bills and goals reviewed'].map((item) => <div key={item} className="flex items-center gap-2 rounded-lg border border-[#222a3d] bg-[#0b1326] p-3 text-xs text-[#bbcabf]"><CheckCircle2 className="w-4 h-4 text-[#4edea3]" />{item}</div>)}</div><div className="mt-5 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-[#86948a]">{lastReconciled ? `Last closed ${lastReconciled}` : 'This month is ready for review.'}</span><button onClick={() => setLastReconciled(new Date().toLocaleDateString())} className="h-9 px-4 rounded-md bg-[#4edea3] text-[#003824] text-xs font-bold inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Reconcile and close month</button></div></section><NetWorthChart data={INITIAL_NET_WORTH_HISTORY} privacyMode={privacyMode} /></div>}
 

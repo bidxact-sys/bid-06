@@ -1,4 +1,25 @@
 export type FinanceScope = 'personal' | 'company'
+
+export interface FinanceApiAccount {
+  id: number
+  name: string
+  type: string
+  scope: FinanceScope
+  currency: string
+  currentBalance: string | number
+}
+
+export interface FinanceApiTransaction {
+  id: number
+  accountId: number
+  scope: FinanceScope
+  type: FinanceTransactionType
+  amount: string | number
+  description: string
+  transactionDate: string
+  category?: string | null
+  counterparty?: string | null
+}
 export type FinanceTransactionType = 'income' | 'expense' | 'transfer' | 'deposit' | 'withdrawal' | 'adjustment'
 
 export interface FinanceAccountInput {
@@ -35,9 +56,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const financeApi = {
-  listAccounts: () => request('/api/finance/accounts'),
-  createAccount: (input: FinanceAccountInput) => request('/api/finance/accounts', { method: 'POST', body: JSON.stringify(input) }),
-  listTransactions: () => request('/api/finance/transactions'),
+  listAccounts: () => request<FinanceApiAccount[]>('/api/finance/accounts'),
+  createAccount: (input: FinanceAccountInput) => request<FinanceApiAccount>('/api/finance/accounts', { method: 'POST', body: JSON.stringify(input) }),
+  listTransactions: () => request<FinanceApiTransaction[]>('/api/finance/transactions'),
   createTransaction: (input: FinanceTransactionInput) => request('/api/finance/transactions', { method: 'POST', body: JSON.stringify(input) }),
   deleteTransaction: (id: number) => request<void>(`/api/finance/transactions/${id}`, { method: 'DELETE' }),
   listBudgets: () => request('/api/finance/budgets'),
