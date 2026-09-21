@@ -90,7 +90,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   return (
     <header
       id="app-top-header"
-      className="h-14 min-w-0 overflow-hidden border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none gap-2 sm:gap-4"
+      className="h-14 min-w-0 overflow-visible border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-50 select-none gap-2 sm:gap-4"
     >
       {/* Left Area: Mobile Menu Toggle & Search Bar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
@@ -135,6 +135,9 @@ export const TopNav: React.FC<TopNavProps> = ({
             onClick={() => setShowNotifications(!showNotifications)}
             className="w-9 h-9 rounded-md bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] flex items-center justify-center text-[#86948a] hover:text-[#dae2fd] relative transition-colors cursor-pointer"
             title="Notifications & SLA Alerts"
+            aria-label="Notifications & SLA Alerts"
+            aria-expanded={showNotifications}
+            aria-controls="menu-notifications-popover"
           >
             <Bell className="w-4 h-4" />
             {(notificationCount > 0 || liveNotifications.some((notification) => notification.unread)) && (
@@ -145,7 +148,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           {showNotifications && (
             <div
               id="menu-notifications-popover"
-              className="absolute right-0 mt-1.5 w-80 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1.5rem))] max-h-[calc(100vh-5rem)] bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl z-[100] overflow-hidden"
             >
               <div className="px-3 py-2.5 border-b border-[#222a3d] flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#dae2fd] flex items-center gap-1.5">
