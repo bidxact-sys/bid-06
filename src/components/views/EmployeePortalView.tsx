@@ -1,0 +1,50 @@
+import React, { useState } from 'react';
+import { CheckCircle2, Clock3, FileText, MessageSquare, Paperclip, Send, ShieldCheck, TriangleAlert } from 'lucide-react';
+
+const projects = [
+  { name: 'Project BC-08-26', client: 'Northstar Builders', progress: 68, due: 'Today, 4:00 PM', status: 'At risk', color: 'text-[#f0b44d]' },
+  { name: 'Metro Heights — Shop Drawings', client: 'Turner Construction', progress: 42, due: 'Tomorrow', status: 'On track', color: 'text-[#4edea3]' },
+  { name: 'Civic Centre Takeoff', client: 'CityWorks', progress: 84, due: 'Sep 25', status: 'On track', color: 'text-[#4edea3]' },
+];
+
+const tasks = [
+  { title: 'Resolve RFI-042: slab penetration detail', project: 'Project BC-08-26', due: 'Due today', urgent: true },
+  { title: 'Upload revised Level 03 shop drawings', project: 'Metro Heights', due: 'Due tomorrow', urgent: false },
+  { title: 'Review concrete quantities with Omar', project: 'Civic Centre Takeoff', due: 'Sep 24', urgent: false },
+];
+
+export function EmployeePortalView() {
+  const [message, setMessage] = useState('');
+  const [sent, setSent] = useState(false);
+  const [taskState, setTaskState] = useState<Record<string, boolean>>({});
+
+  const toggleTask = (title: string) => setTaskState((state) => ({ ...state, [title]: !state[title] }));
+
+  return (
+    <div className="min-h-full bg-[#080d18] text-[#dae2fd] p-4 md:p-7">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div><p className="text-[10px] font-mono uppercase tracking-[0.24em] text-[#4edea3]">Employee workspace / today</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">Good morning, Maya.</h1><p className="mt-1 text-sm text-[#86948a]">Your assigned work, project conversations, and next actions in one place.</p></div>
+          <div className="flex items-center gap-2 rounded-xl border border-[#4edea3]/20 bg-[#0d1728] px-3 py-2 text-xs"><span className="h-2 w-2 rounded-full bg-[#4edea3]" /><span className="text-[#bbcabf]">Available for work</span><span className="font-mono text-[#4edea3]">40% capacity</span></div>
+        </header>
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[['3', 'Active projects', '1 due today'], ['5', 'Open tasks', '2 high priority'], ['2', 'Unread messages', '1 client thread'], ['06:30', 'Hours this week', 'of 40:00 target']].map(([value, label, note]) => <div key={label} className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-4"><p className="text-2xl font-semibold text-white">{value}</p><p className="mt-1 text-xs font-medium text-[#bbcabf]">{label}</p><p className="mt-2 text-[10px] font-mono text-[#4edea3]">{note}</p></div>)}
+        </section>
+
+        <div className="grid gap-6 xl:grid-cols-[1.45fr_0.9fr]">
+          <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-4 md:p-5"><div className="flex items-center justify-between"><div><p className="text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Assigned portfolio</p><h2 className="mt-1 text-lg font-semibold text-white">My active projects</h2></div><button className="text-xs font-semibold text-[#4edea3]">View all</button></div><div className="mt-4 space-y-3">{projects.map((project) => <article key={project.name} className="rounded-xl border border-[#222a3d] bg-[#0a1220] p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="text-sm font-semibold text-white">{project.name}</h3><p className="mt-1 text-xs text-[#86948a]">{project.client}</p></div><span className={`text-[10px] font-mono uppercase ${project.color}`}>{project.status}</span></div><div className="mt-4 flex items-center gap-3"><div className="h-1.5 flex-1 rounded-full bg-[#222a3d]"><div className="h-1.5 rounded-full bg-[#4edea3]" style={{ width: `${project.progress}%` }} /></div><span className="text-[10px] font-mono text-[#bbcabf]">{project.progress}%</span></div><div className="mt-3 flex items-center justify-between text-[10px] text-[#86948a]"><span>Next deadline</span><span className="font-mono text-[#dae2fd]">{project.due}</span></div></article>)}</div></section>
+
+          <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-4 md:p-5"><p className="text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Today</p><h2 className="mt-1 text-lg font-semibold text-white">Next actions</h2><div className="mt-4 space-y-3">{tasks.map((task) => <button key={task.title} type="button" onClick={() => toggleTask(task.title)} className="flex w-full items-start gap-3 text-left"><span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${taskState[task.title] ? 'border-[#4edea3] bg-[#4edea3] text-[#07101f]' : 'border-[#526078]'}`}>{taskState[task.title] && <CheckCircle2 className="h-3 w-3" />}</span><span className={taskState[task.title] ? 'opacity-50 line-through' : ''}><span className="block text-xs font-medium text-white">{task.title}</span><span className={`mt-1 block text-[10px] font-mono ${task.urgent ? 'text-[#f0b44d]' : 'text-[#86948a]'}`}>{task.project} · {task.due}</span></span></button>)}</div><div className="mt-5 rounded-xl border border-[#f0b44d]/20 bg-[#f0b44d]/10 p-3"><div className="flex gap-2"><TriangleAlert className="h-4 w-4 shrink-0 text-[#f0b44d]" /><div><p className="text-xs font-semibold text-[#f0b44d]">Blocker needs attention</p><p className="mt-1 text-[10px] leading-4 text-[#d7c99d]">RFI-042 is waiting for a client response. Keep the project lead informed before the deadline.</p></div></div></div></section>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+          <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-4 md:p-5"><div className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-[#4edea3]" /><h2 className="text-sm font-semibold text-white">Project communication</h2></div><p className="mt-1 text-xs text-[#86948a]">Client-safe thread for Project BC-08-26</p><div className="mt-4 rounded-xl bg-[#0a1220] p-3 text-xs leading-5 text-[#bbcabf]"><span className="font-semibold text-white">Northstar Builders</span><p>Can you confirm the revised slab penetration detail before 4 PM?</p><p className="mt-1 text-[10px] font-mono text-[#86948a]">10:42 AM · Client portal</p></div><form onSubmit={(event) => { event.preventDefault(); if (!message.trim()) return; setSent(true); setMessage(''); }} className="mt-3 flex gap-2"><input aria-label="Reply to client" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Reply in project-safe channel..." className="min-w-0 flex-1 rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white outline-none placeholder:text-[#667085]" /><button aria-label="Send reply" type="submit" className="rounded-lg bg-[#4edea3] px-3 text-[#07101f]"><Send className="h-4 w-4" /></button></form>{sent && <p className="mt-2 text-[10px] text-[#4edea3]">Reply queued for the client thread.</p>}</section>
+          <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-4 md:p-5"><div className="flex items-center justify-between"><div><p className="text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Work center</p><h2 className="mt-1 text-sm font-semibold text-white">Deliverables & time</h2></div><span className="flex items-center gap-1 text-[10px] text-[#4edea3]"><ShieldCheck className="h-3.5 w-3.5" /> Project-safe access</span></div><div className="mt-4 grid gap-3 sm:grid-cols-3"><button className="rounded-xl border border-[#222a3d] bg-[#0a1220] p-3 text-left"><FileText className="h-4 w-4 text-[#7db2ff]" /><span className="mt-3 block text-xs font-semibold text-white">Documents</span><span className="mt-1 block text-[10px] text-[#86948a]">8 files · 2 revisions</span></button><button className="rounded-xl border border-[#222a3d] bg-[#0a1220] p-3 text-left"><Clock3 className="h-4 w-4 text-[#4edea3]" /><span className="mt-3 block text-xs font-semibold text-white">Log time</span><span className="mt-1 block text-[10px] text-[#86948a]">06:30 this week</span></button><button className="rounded-xl border border-[#222a3d] bg-[#0a1220] p-3 text-left"><Paperclip className="h-4 w-4 text-[#f0b44d]" /><span className="mt-3 block text-xs font-semibold text-white">Upload</span><span className="mt-1 block text-[10px] text-[#86948a]">Share a deliverable</span></button></div></section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default EmployeePortalView;
