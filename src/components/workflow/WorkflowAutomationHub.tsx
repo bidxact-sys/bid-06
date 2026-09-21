@@ -356,6 +356,7 @@ export const WorkflowAutomationHub: React.FC = () => {
         title: `New quotation request: ${newIntake.projectTitle}`,
         description: `${newIntake.clientCompany} submitted a project for quotation.`,
         intakeId: newIntake.id,
+        audience: ['admin', 'team-lead', 'employee', 'hr'],
       },
     }));
     logWebhookEvent(

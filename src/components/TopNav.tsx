@@ -11,7 +11,20 @@ import {
   CalendarClock
 } from 'lucide-react';
 
+export type NotificationRole = 'admin' | 'employee' | 'client' | 'hr' | 'team-lead';
+
+type RoleNotification = {
+  id: string;
+  title: string;
+  time: string;
+  desc: string;
+  unread: boolean;
+  type: 'quote' | 'delta' | 'info' | 'alert';
+  audience: NotificationRole[];
+};
+
 interface TopNavProps {
+  viewerRole?: NotificationRole;
   onOpenCommandPalette: () => void;
   notificationCount: number;
   onToggleMobileMenu?: () => void;
@@ -25,47 +38,51 @@ export const TopNav: React.FC<TopNavProps> = ({
   onToggleMobileMenu,
   onNavigateToReminders,
   urgentReminderCount = 0,
+  viewerRole = 'admin',
 }) => {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [liveNotifications, setLiveNotifications] = useState<Array<{ id: string; title: string; time: string; desc: string; unread: boolean; type: 'quote' | 'delta' | 'info' | 'alert' }>>([]);
+  const [liveNotifications, setLiveNotifications] = useState<RoleNotification[]>([]);
+  const [activeRole, setActiveRole] = useState<NotificationRole>(viewerRole);
 
-  const notifications = [
+  const notificationFeed: RoleNotification[] = [
     ...liveNotifications,
-
     {
-      id: 'notif-1',
-      title: 'RFI-2024-089 Delta Calculated',
-      time: '12m ago',
-      desc: 'Structural schedule rebar revision calculated: +$48,150.00 to Bid #BID-8849',
-      unread: true,
-      type: 'delta',
+      id: 'notif-1', title: 'RFI-2024-089 Delta Calculated', time: '12m ago',
+      desc: 'Structural schedule rebar revision calculated: +$48,150.00 to Bid #BID-8849', unread: true, type: 'delta',
+      audience: ['admin', 'team-lead', 'employee'],
     },
     {
-      id: 'notif-2',
-      title: 'Skanska USA Addendum Received',
-      time: '1h ago',
-      desc: 'MEP clash resolution package uploaded for Biotech Innovation Lab',
-      unread: true,
-      type: 'info',
+      id: 'notif-2', title: 'Skanska USA Addendum Received', time: '1h ago',
+      desc: 'MEP clash resolution package uploaded for Biotech Innovation Lab', unread: true, type: 'info',
+      audience: ['admin', 'team-lead', 'employee'],
     },
     {
-      id: 'notif-3',
-      title: 'SLA Escalation Warning',
-      time: '3h ago',
-      desc: 'RFI-2024-092 ceiling plenum clash SLA response due within 6 hours',
-      unread: false,
-      type: 'alert',
+      id: 'notif-3', title: 'SLA Escalation Warning', time: '3h ago',
+      desc: 'RFI-2024-092 ceiling plenum clash SLA response due within 6 hours', unread: false, type: 'alert',
+      audience: ['admin', 'team-lead', 'employee'],
+    },
+    {
+      id: 'notif-4', title: 'HR policy acknowledgement due', time: 'Today',
+      desc: 'Please review and acknowledge the updated employee handbook.', unread: true, type: 'info',
+      audience: ['hr', 'employee'],
+    },
+    {
+      id: 'notif-5', title: 'Quotation status updated', time: 'Today',
+      desc: 'Your quotation request is now being reviewed by the estimating team.', unread: true, type: 'quote',
+      audience: ['client'],
     },
   ];
+  const notifications = notificationFeed.filter((notification) => notification.audience.includes(activeRole));
 
   // Listen for new client quotation requests from the intake workflow.
   useEffect(() => {
     const handleQuoteIntake = (event: Event) => {
-      const detail = (event as CustomEvent<{ title: string; description: string; intakeId: string }>).detail;
-      const notification = { id: detail.intakeId, title: detail.title, time: 'Just now', desc: detail.description, unread: true, type: 'quote' as const };
+      const detail = (event as CustomEvent<{ title: string; description: string; intakeId: string; audience?: NotificationRole[] }>).detail;
+      const audience = detail.audience ?? ['admin', 'team-lead', 'employee', 'hr'];
+      const notification: RoleNotification = { id: detail.intakeId, title: detail.title, time: 'Just now', desc: detail.description, unread: true, type: 'quote', audience };
       setLiveNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)]);
-      if ('Notification' in window) {
+      if (audience.includes(activeRole) && 'Notification' in window) {
         const showDesktopAlert = () => new Notification('New quotation request', { body: detail.description, tag: detail.intakeId });
         if (Notification.permission === 'granted') showDesktopAlert();
         else if (Notification.permission === 'default') void Notification.requestPermission().then((permission) => { if (permission === 'granted') showDesktopAlert(); });
@@ -73,7 +90,7 @@ export const TopNav: React.FC<TopNavProps> = ({
     };
     window.addEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
     return () => window.removeEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
-  }, []);
+  }, [activeRole]);
 
   // Close menus on click outside
   useEffect(() => {
@@ -140,7 +157,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             aria-controls="menu-notifications-popover"
           >
             <Bell className="w-4 h-4" />
-            {(notificationCount > 0 || liveNotifications.some((notification) => notification.unread)) && (
+            {(notificationCount > 0 || notifications.some((notification) => notification.unread)) && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff7886] rounded-full ring-2 ring-[#0b1326]" />
             )}
           </button>
@@ -154,7 +171,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 <span className="text-xs font-semibold text-[#dae2fd] flex items-center gap-1.5">
                   Live Notifications & SLA Alerts
                   <span className="text-[10px] font-mono px-1.5 py-0.2 bg-[#ff7886]/20 text-[#ffb4ab] rounded">
-                    {liveNotifications.filter((notification) => notification.unread).length + 2} unread
+                    {notifications.filter((notification) => notification.unread).length} unread
                   </span>
                 </span>
                 <button
@@ -232,9 +249,18 @@ export const TopNav: React.FC<TopNavProps> = ({
           </div>
           <div className="hidden lg:block text-left leading-tight">
             <div className="text-xs font-semibold text-[#dae2fd]">Marcus Vance</div>
-            <div className="text-[10px] font-mono tracking-wider text-[#86948a] uppercase">
-              Managing Principal
-            </div>
+            <select
+              aria-label="Preview notification role"
+              value={activeRole}
+              onChange={(event) => { setActiveRole(event.target.value as NotificationRole); setShowNotifications(false); }}
+              className="mt-0.5 max-w-32 bg-transparent text-[10px] font-mono tracking-wider text-[#86948a] uppercase outline-none cursor-pointer"
+            >
+              <option value="admin">Admin</option>
+              <option value="employee">Employee</option>
+              <option value="client">Client</option>
+              <option value="hr">HR</option>
+              <option value="team-lead">Team Lead</option>
+            </select>
           </div>
         </div>
       </div>
