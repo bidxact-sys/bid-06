@@ -63,6 +63,17 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
   const [bondingFee, setBondingFee] = useState<number>(1850);
   const [depositPercent, setDepositPercent] = useState<number>(25);
   const [validDays, setValidDays] = useState<number>(30);
+  const [currency, setCurrency] = useState('USD');
+  const currencyOptions = [
+    { code: 'USD', name: 'US Dollar', locale: 'en-US' },
+    { code: 'CAD', name: 'Canadian Dollar', locale: 'en-CA' },
+    { code: 'EUR', name: 'Euro', locale: 'de-DE' },
+    { code: 'GBP', name: 'British Pound', locale: 'en-GB' },
+    { code: 'AED', name: 'UAE Dirham', locale: 'en-AE' },
+    { code: 'SAR', name: 'Saudi Riyal', locale: 'ar-SA' },
+    { code: 'AUD', name: 'Australian Dollar', locale: 'en-AU' },
+  ];
+  const formatMoney = (value: number) => new Intl.NumberFormat(currencyOptions.find((option) => option.code === currency)?.locale || 'en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(value);
 
   // Line items state
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([
@@ -160,6 +171,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
       markupPercent,
       bondingFee,
       totalAmount,
+      currency,
       requiredDepositPercent: depositPercent,
       requiredDepositAmount,
       paymentTerms: `Net 30 with ${depositPercent}% Mobilization Deposit`,
@@ -380,6 +392,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           </div>
 
           {/* Pricing Financial Adjustments */}
+          <div className="mb-3 rounded-xl border border-[#4edea3]/25 bg-[#0b1326] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"><div><p className="text-xs font-semibold text-white">Quotation currency</p><p className="text-[10px] text-[#86948a]">Line items, deposits, balances, payments, and expenses use this currency.</p></div><select aria-label="Quotation currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs font-mono text-white"><option value="USD">USD · US Dollar</option><option value="CAD">CAD · Canadian Dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · British Pound</option><option value="AED">AED · UAE Dirham</option><option value="SAR">SAR · Saudi Riyal</option><option value="AUD">AUD · Australian Dollar</option></select></div>
           <div className="p-4 rounded-xl bg-[#131b2e] border border-[#222a3d] grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
             <div>
               <label className="block text-[11px] text-[#86948a] mb-1">Overhead &amp; Markup (%)</label>
@@ -417,7 +430,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 Gross Quotation Amount
               </div>
               <div className="text-2xl font-bold text-white">
-                ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {formatMoney(totalAmount)}
               </div>
               <div className="text-xs text-[#86948a] mt-0.5">
                 Subtotal: ${subtotal.toLocaleString()} &bull; Markup: ${markupAmount.toLocaleString()}

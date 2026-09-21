@@ -137,6 +137,7 @@ export interface QuoteEntity {
   markupPercent: number; // e.g. 15%
   bondingFee: number;
   totalAmount: number;
+  currency?: string;
   requiredDepositPercent: number; // e.g. 25% or 30%
   requiredDepositAmount: number;
   paymentTerms: string; // "Net 30 with 25% Mobilization Deposit"
