@@ -38,6 +38,7 @@ import {
   WorkflowWebhookEvent,
   AutomationRulesConfig,
   UserEntity,
+  SalesLead,
 } from '../../types/workflow';
 import {
   INITIAL_INTAKE_REQUESTS,
@@ -64,6 +65,13 @@ export const WorkflowAutomationHub: React.FC = () => {
   const [events, setEvents] = useState<WorkflowWebhookEvent[]>(INITIAL_WEBHOOK_EVENTS);
   const [users, setUsers] = useState<UserEntity[]>(INITIAL_USERS);
   const [rules, setRules] = useState<AutomationRulesConfig>(DEFAULT_AUTOMATION_RULES);
+  const [salesLeads, setSalesLeads] = useState<SalesLead[]>([
+    { id: 'LEAD-104', clientName: 'Ahmad Khan', clientCompany: 'Northstar Builders', clientEmail: 'ahmad@northstar.example', projectTitle: 'Building Expansion', decision: 'Client approved proceeding to formal quotation.', scopeOfWork: 'Shop drawings, quantity takeoff, and coordination review.', recommendedNextStep: 'Send quotation and follow up on deposit.', createdBy: 'Ahmad', reminderAt: 'Today, 4:00 PM', status: 'reminder_set', commissionRate: 5, commissionPaid: 0 },
+  ]);
+  const [currentUserRole] = useState<'executive' | 'sales_lead' | 'sales'>('executive');
+  const [assignmentMode, setAssignmentMode] = useState<'smart' | 'outsourced'>('smart');
+  const [employeeAccepted, setEmployeeAccepted] = useState(false);
+  const [timerStartedAt, setTimerStartedAt] = useState<string | null>(null);
 
   // Active Stage Filter / Tab
   const [activePipelineStage, setActivePipelineStage] = useState<
@@ -535,6 +543,42 @@ export const WorkflowAutomationHub: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Sales intake, privacy, assignment, and commission control center */}
+      <section className="rounded-2xl border border-[#222a3d] bg-[#0b1326] p-4 sm:p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#4edea3] font-mono">Sales-to-delivery control</p>
+            <h2 className="mt-1 text-base font-bold text-white">Client intake, reminders, assignment, and commissions</h2>
+            <p className="mt-1 text-xs text-[#86948a]">Sensitive reminders and delivery events are scoped to founders, team leads, and the responsible employee.</p>
+          </div>
+          <span className="rounded-full border border-[#4edea3]/30 bg-[#4edea3]/10 px-2.5 py-1 text-[10px] font-mono text-[#4edea3]">Role: {currentUserRole}</span>
+        </div>
+        <div className="grid gap-3 xl:grid-cols-[1.25fr_1fr_1fr]">
+          {salesLeads.map((lead) => {
+            const linkedQuote = quotes.find((quote) => quote.id === lead.quoteId) || quotes.find((quote) => quote.client.company === lead.clientCompany);
+            const pendingCost = linkedQuote ? linkedQuote.totalAmount - (linkedQuote.status === 'paid_and_activated' ? linkedQuote.requiredDepositAmount : 0) : 0;
+            return <div key={lead.id} className="rounded-xl border border-[#2b3851] bg-[#101a30] p-3.5">
+              <div className="flex items-start justify-between gap-2"><div><p className="text-xs font-semibold text-white">{lead.clientCompany}</p><p className="text-[11px] text-[#86948a]">{lead.clientName} · {lead.projectTitle}</p></div><span className="rounded-full bg-[#e0b44a]/10 px-2 py-1 text-[10px] font-mono text-[#e0b44a]">{lead.status.replace('_', ' ')}</span></div>
+              <div className="mt-3 grid gap-2 text-[11px] text-[#bbcabf]"><p><span className="text-[#86948a]">Decision:</span> {lead.decision}</p><p><span className="text-[#86948a]">Scope:</span> {lead.scopeOfWork}</p><p><span className="text-[#86948a]">Next step:</span> {lead.recommendedNextStep}</p></div>
+              <div className="mt-3 flex items-center justify-between border-t border-[#222a3d] pt-3"><span className="text-[10px] font-mono text-[#4edea3]">Reminder: {lead.reminderAt}</span><button type="button" onClick={() => setSalesLeads((items) => items.map((item) => item.id === lead.id ? { ...item, status: 'quoted', quoteId: quotes[0]?.id } : item))} className="rounded-lg bg-[#0566d9] px-2.5 py-1.5 text-[10px] font-semibold text-white">Create quotation</button></div>
+            </div>;
+          })}
+          <div className="rounded-xl border border-[#2b3851] bg-[#101a30] p-3.5">
+            <p className="text-xs font-semibold text-white">Quoted project handoff</p><p className="mt-1 text-[11px] text-[#86948a]">Only won quotations appear in the assignment queue.</p>
+            <div className="mt-3 rounded-lg bg-[#0b1326] p-3 text-[11px] text-[#bbcabf]"><p className="font-semibold text-[#dae2fd]">{quotes.find((quote) => quote.status === 'paid_and_activated')?.title || 'No paid project yet'}</p><p className="mt-1">Pending cost: <span className="font-mono text-[#e0b44a]">${(quotes.find((quote) => quote.status === 'paid_and_activated')?.totalAmount || 0).toLocaleString()}</span></p></div>
+            <div className="mt-3 flex gap-2"><button type="button" onClick={() => setAssignmentMode('smart')} className={`flex-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold ${assignmentMode === 'smart' ? 'bg-[#4edea3] text-[#07101f]' : 'border border-[#2b3851] text-[#86948a]'}`}>Assign available team</button><button type="button" onClick={() => setAssignmentMode('outsourced')} className={`flex-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold ${assignmentMode === 'outsourced' ? 'bg-[#e0b44a] text-[#07101f]' : 'border border-[#2b3851] text-[#86948a]'}`}>Outsource</button></div>
+            <p className="mt-2 text-[10px] font-mono text-[#4edea3]">Route: {assignmentMode === 'smart' ? 'capacity + CSI match' : 'vendor approval queue'}</p>
+          </div>
+          <div className="rounded-xl border border-[#2b3851] bg-[#101a30] p-3.5">
+            <p className="text-xs font-semibold text-white">Acceptance timer & commission</p><p className="mt-1 text-[11px] text-[#86948a]">Timer starts only after the assigned employee accepts.</p>
+            <button type="button" onClick={() => { setEmployeeAccepted(true); setTimerStartedAt(new Date().toLocaleTimeString()); }} className="mt-3 w-full rounded-lg bg-[#4edea3] px-3 py-2 text-[11px] font-bold text-[#07101f]">{employeeAccepted ? 'Accepted · timer running' : 'Employee accepts project'}</button>
+            <p className="mt-2 text-[10px] font-mono text-[#86948a]">{timerStartedAt ? `Started ${timerStartedAt}` : 'Waiting for acceptance'}</p>
+            <div className="mt-3 border-t border-[#222a3d] pt-3 flex items-center justify-between text-[11px]"><span className="text-[#86948a]">Sales commission</span><span className="font-mono text-[#4edea3]">5% · pending approval</span></div>
+          </div>
+        </div>
+        <p className="text-[10px] font-mono text-[#86948a]">Privacy scope: founder/owner + sales lead + entry creator for reminders; founder/owner + team lead + assigned employee for delivery notifications. Sales users never receive private delivery notes.</p>
+      </section>
 
       {/* 5-Stage Interactive Pipeline Navigation */}
       <div className="flex items-center justify-between gap-4 flex-wrap">

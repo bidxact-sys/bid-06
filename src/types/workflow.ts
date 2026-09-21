@@ -32,7 +32,26 @@ export type PaymentStatus =
 
 export type AssignmentMethod = 'smart_auto' | 'manual_pm' | 'reallocated' | 'fallback_escalation';
 
-export type UserRole = 'client_representative' | 'estimator' | 'senior_auditor' | 'pm_lead' | 'executive';
+export type UserRole = 'client_representative' | 'sales' | 'sales_lead' | 'estimator' | 'senior_auditor' | 'pm_lead' | 'executive';
+
+export type SalesLeadStatus = 'new' | 'reminder_set' | 'quoted' | 'won' | 'lost';
+
+export interface SalesLead {
+  id: string;
+  clientName: string;
+  clientCompany: string;
+  clientEmail: string;
+  projectTitle: string;
+  decision: string;
+  scopeOfWork: string;
+  recommendedNextStep: string;
+  createdBy: string;
+  reminderAt: string;
+  status: SalesLeadStatus;
+  quoteId?: string;
+  commissionRate: number;
+  commissionPaid: number;
+}
 
 // 1. User Entity
 export interface UserEntity {
