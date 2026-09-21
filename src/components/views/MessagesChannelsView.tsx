@@ -17,7 +17,15 @@ interface ChatMessage {
   time: string;
   text: string;
   channelId: string;
+  audience: 'internal' | 'client';
+  projectId?: string;
+  senderRole?: 'employee' | 'client' | 'manager';
 }
+
+const CLIENT_THREADS = [
+  { id: 'project-bc-08-26', name: 'Project BC-08-26', unread: 2, topic: 'Client questions, RFIs, and deliverables', client: 'Northstar Builders', safeEmployee: 'Project Engineer — UK' },
+  { id: 'metro-heights', name: 'Metro Heights', unread: 0, topic: 'Drawing reviews and approved changes', client: 'Turner Construction', safeEmployee: 'BIM Coordinator — AR' },
+];
 
 const CHANNELS = [
   { id: 'estimating-ops', name: 'estimating-ops', unread: 2, topic: 'Daily pre-con takeoff coordination' },
@@ -34,6 +42,8 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     time: '09:14 AM',
     text: 'Turner Construction confirmed RFI-089 resolution on Metro Heights Level 14-28 rebar density. Quantities updated in QTO model.',
     channelId: 'estimating-ops',
+    audience: 'internal',
+    senderRole: 'employee',
   },
   {
     id: 'm-2',
@@ -42,6 +52,8 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     time: '09:28 AM',
     text: 'LOD 350 geometry on St. Jude medical gas lines is now cleanly aligned with structural ribs. Zero MEP clashes remaining.',
     channelId: 'estimating-ops',
+    audience: 'internal',
+    senderRole: 'employee',
   },
   {
     id: 'm-3',
@@ -50,6 +62,8 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     time: '09:42 AM',
     text: 'Biotech Innovation Lab peer review report complete. All 14 divisions reconciled with 0.08% delta.',
     channelId: 'estimating-ops',
+    audience: 'internal',
+    senderRole: 'employee',
   },
   {
     id: 'm-4',
@@ -58,16 +72,21 @@ const INITIAL_MESSAGES: ChatMessage[] = [
     time: '10:05 AM',
     text: 'Monitoring Balfour Beatty on RFI-104. If ASTM A992 grade variance is approved by 2 PM, warehouse estimate will be ready for package release.',
     channelId: 'rfi-hotline',
+    audience: 'internal',
+    senderRole: 'employee',
   },
 ];
 
 export const MessagesChannelsView: React.FC = () => {
+  const [audience, setAudience] = useState<'internal' | 'client'>('internal');
   const [activeChannel, setActiveChannel] = useState('estimating-ops');
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState('');
+  const [messageType, setMessageType] = useState<'message' | 'rfi' | 'change_request'>('message');
 
-  const channelMessages = messages.filter((m) => m.channelId === activeChannel);
-  const currentChannelInfo = CHANNELS.find((c) => c.id === activeChannel);
+  const visibleChannels = audience === 'internal' ? CHANNELS : CLIENT_THREADS;
+  const channelMessages = messages.filter((m) => m.channelId === activeChannel && m.audience === audience);
+  const currentChannelInfo = visibleChannels.find((c) => c.id === activeChannel);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,11 +94,14 @@ export const MessagesChannelsView: React.FC = () => {
 
     const newMsg: ChatMessage = {
       id: `m-${Date.now()}`,
-      sender: 'Marcus Vance',
-      avatarText: 'MV',
+      sender: audience === 'internal' ? 'Marcus Vance' : 'Client contact',
+      avatarText: audience === 'internal' ? 'MV' : 'CC',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: inputText.trim(),
+      text: messageType === 'rfi' ? `RFI: ${inputText.trim()}` : messageType === 'change_request' ? `CHANGE REQUEST: ${inputText.trim()}` : inputText.trim(),
       channelId: activeChannel,
+      audience,
+      projectId: audience === 'client' ? activeChannel : undefined,
+      senderRole: audience === 'internal' ? 'employee' : 'client',
     };
 
     setMessages([...messages, newMsg]);
@@ -110,11 +132,9 @@ export const MessagesChannelsView: React.FC = () => {
       <div className="bg-[#131b2e] border border-[#222a3d] rounded-lg h-[620px] flex flex-col md:flex-row overflow-hidden">
         {/* Left Channel Sidebar */}
         <div className="w-full md:w-64 bg-[#0b1326] border-r border-[#222a3d] flex flex-col shrink-0">
-          <div className="p-3 border-b border-[#222a3d] font-mono text-xs font-semibold text-[#86948a] uppercase tracking-wider">
-            Operational Channels
-          </div>
+          <div className="p-3 border-b border-[#222a3d] space-y-2"><div className="grid grid-cols-2 rounded-lg bg-[#131b2e] p-1"><button type="button" onClick={() => { setAudience('internal'); setActiveChannel('estimating-ops'); }} className={`rounded px-2 py-1.5 text-[10px] font-bold ${audience === 'internal' ? 'bg-[#4edea3] text-[#003824]' : 'text-[#86948a]'}`}>Employee team</button><button type="button" onClick={() => { setAudience('client'); setActiveChannel(CLIENT_THREADS[0].id); }} className={`rounded px-2 py-1.5 text-[10px] font-bold ${audience === 'client' ? 'bg-[#3b82f6] text-white' : 'text-[#86948a]'}`}>Client portal</button></div><div className="font-mono text-[10px] font-semibold text-[#86948a] uppercase tracking-wider">{audience === 'internal' ? 'Operational channels' : 'Project conversations'}</div></div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {CHANNELS.map((ch) => (
+            {visibleChannels.map((ch) => (
               <button
                 key={ch.id}
                 onClick={() => setActiveChannel(ch.id)}
@@ -156,8 +176,8 @@ export const MessagesChannelsView: React.FC = () => {
               </div>
               <div className="text-[11px] text-[#86948a]">{currentChannelInfo?.topic}</div>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/20">
-              ENCRYPTED INTERNAL
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${audience === 'internal' ? 'bg-[#4edea3]/10 text-[#4edea3] border-[#4edea3]/20' : 'bg-[#3b82f6]/10 text-[#7db2ff] border-[#3b82f6]/20'}`}>
+              {audience === 'internal' ? 'ENCRYPTED INTERNAL' : 'PROXIED CLIENT THREAD'}
             </span>
           </div>
 
@@ -182,8 +202,7 @@ export const MessagesChannelsView: React.FC = () => {
           </div>
 
           {/* Message Input Box */}
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-[#222a3d] bg-[#0b1326] flex items-center gap-2">
-            <input
+          <form onSubmit={handleSendMessage} className="p-3 border-t border-[#222a3d] bg-[#0b1326] space-y-2"><div className="flex items-center justify-between gap-2">{audience === 'client' ? <p className="text-[10px] text-[#7db2ff]">Privacy proxy active · employees see only project-safe identity and context</p> : <p className="text-[10px] text-[#86948a]">Internal notes remain hidden from clients</p>}<select aria-label="Message type" value={messageType} onChange={(event) => setMessageType(event.target.value as typeof messageType)} className="rounded border border-[#2b3851] bg-[#131b2e] px-2 py-1 text-[10px] text-white"><option value="message">Message</option><option value="rfi">Create RFI</option><option value="change_request">Change request</option></select></div><div className="flex items-center gap-2"><input
               type="text"
               placeholder={`Message #${currentChannelInfo?.name}...`}
               value={inputText}
@@ -196,7 +215,7 @@ export const MessagesChannelsView: React.FC = () => {
             >
               <Send className="w-3.5 h-3.5" />
               <span>Send</span>
-            </button>
+            </button></div>
           </form>
         </div>
       </div>
