@@ -84,7 +84,11 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const activeClient = availableClients.find((c) => c.id === selectedClientId) || availableClients[0];
 
   // Active Navigation Sub-tab
-  const [activeTab, setActiveTab] = useState<'projects' | 'rfis' | 'deliverables' | 'contracts' | 'documents'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'rfis' | 'deliverables' | 'contracts' | 'documents' | 'quote' | 'hiring' | 'tasks' | 'pricing' | 'notifications'>('projects');
+  const [clientUploads, setClientUploads] = useState<string[]>([]);
+  const [hiringSubmitted, setHiringSubmitted] = useState(false);
+  const [clientPriceList, setClientPriceList] = useState([{ code: 'CL-MAT-001', name: 'Client concrete allowance', unit: 'CY', price: 172.5 }, { code: 'CL-MAT-002', name: 'Client rebar allowance', unit: 'LB', price: 0.86 }]);
+  const [selectedEstimateMaterials, setSelectedEstimateMaterials] = useState<string[]>([]);
 
   // RFI Filter & Search State
   const [rfiSearchQuery, setRfiSearchQuery] = useState('');
@@ -536,7 +540,15 @@ methodology and audited by Bid Exact Senior Estimators.
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#222a3d] pb-2">
+      <div className="grid gap-4 lg:grid-cols-[210px_minmax(0,1fr)] items-start">
+        <aside className="sticky top-4 rounded-2xl border border-[#222a3d] bg-[#0d1728] p-2 shadow-xl">
+          <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Client workspace</div>
+          <div className="space-y-1">
+            {[['projects','Project status',Building2],['tasks','Assigned tasks',CheckCircle2],['quote','Upload for quotation',Upload],['pricing','Estimate pricing',DollarSign],['rfis','RFIs & responses',FileQuestion],['deliverables','Delivered files',FolderDown],['hiring','Hire our team',UserCheck],['contracts','Contracts & invoices',FileText],['documents','Documents',FolderArchive],['notifications','Notifications',AlertCircle]].map(([tab,label,Icon]) => <button key={tab as string} type="button" onClick={() => setActiveTab(tab as typeof activeTab)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${activeTab === tab ? 'bg-[#38bdf8] font-bold text-[#0b1326]' : 'text-[#94a3b8] hover:bg-[#131b2e] hover:text-white'}`}><Icon className="h-3.5 w-3.5" /><span>{label as string}</span>{tab === 'notifications' && <span className="ml-auto rounded-full bg-[#e0b44a] px-1.5 text-[9px] font-bold text-[#0b1326]">3</span>}</button>)}
+          </div>
+        </aside>
+        <div className="min-w-0">
+        <div className="hidden">
         <div className="flex items-center gap-1.5 p-1 bg-[#131b2e] border border-[#222a3d] rounded-xl font-mono text-xs overflow-x-auto max-w-full">
           <button
             onClick={() => setActiveTab('projects')}
@@ -627,6 +639,16 @@ methodology and audited by Bid Exact Senior Estimators.
           </div>
         )}
       </div>
+
+      {activeTab === 'tasks' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Assigned project tasks</h2><p className="mt-1 text-xs text-[#94a3b8]">Tasks assigned by the estimator, team lead, or manager appear here and stay linked to the project.</p><div className="mt-4 space-y-2">{['Confirm foundation scope', 'Review client price list', 'Approve preliminary takeoff'].map((task, index) => <div key={task} className="flex items-center justify-between rounded-xl border border-[#222a3d] bg-[#0b1329] p-3"><div><p className="text-xs font-semibold text-white">{task}</p><p className="mt-1 text-[10px] text-[#94a3b8]">{displayedProjects[0]?.title} · Due {index === 0 ? 'Today' : 'Tomorrow'}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${index === 0 ? 'bg-[#e0b44a]/15 text-[#e0b44a]' : 'bg-[#4edea3]/15 text-[#4edea3]'}`}>{index === 0 ? 'Needs action' : 'Assigned'}</span></div>)}</div></section>}
+
+      {activeTab === 'quote' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Upload project for quotation</h2><p className="mt-1 text-xs text-[#94a3b8]">Send plans, drawings, scopes, and bid documents to the estimating team.</p><label className="mt-4 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#38bdf8]/50 bg-[#0b1329] text-center"><Upload className="h-6 w-6 text-[#38bdf8]" /><span className="mt-2 text-xs font-semibold text-white">Choose project files</span><span className="mt-1 text-[10px] text-[#94a3b8]">PDF, DWG, XLSX, ZIP up to 250 MB</span><input type="file" multiple className="sr-only" onChange={(event) => setClientUploads(Array.from(event.target.files ?? []).map((file) => file.name))} /></label>{clientUploads.length > 0 && <div className="mt-3 rounded-lg bg-[#132728] p-3 text-xs text-[#4edea3]">{clientUploads.length} file(s) ready for quotation review: {clientUploads.join(', ')}</div>}<button type="button" disabled={!clientUploads.length} className="mt-4 rounded-lg bg-[#4edea3] px-4 py-2 text-xs font-bold text-[#07101f] disabled:cursor-not-allowed disabled:opacity-40">Submit quotation request</button></section>}
+
+      {activeTab === 'pricing' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Client estimate pricing</h2><p className="mt-1 text-xs text-[#94a3b8]">These client-specific prices are visible to the estimating team and can be used in this project estimate.</p><div className="mt-4 space-y-2">{clientPriceList.map((item) => <div key={item.code} className="flex items-center justify-between rounded-xl border border-[#222a3d] bg-[#0b1329] p-3"><div><p className="text-xs font-semibold text-white">{item.name}</p><p className="mt-1 font-mono text-[10px] text-[#94a3b8]">{item.code} · {item.unit}</p></div><div className="flex items-center gap-3"><span className="font-mono text-sm text-[#4edea3]">${item.price.toFixed(2)}</span><button type="button" onClick={() => setSelectedEstimateMaterials((items) => items.includes(item.code) ? items : [...items, item.code])} className="rounded-lg bg-[#38bdf8] px-2.5 py-1.5 text-[10px] font-bold text-[#0b1326]">{selectedEstimateMaterials.includes(item.code) ? 'Added' : 'Add to estimate'}</button></div></div>)}</div><div className="mt-4 border-t border-[#222a3d] pt-3 text-xs text-[#94a3b8]">{selectedEstimateMaterials.length} client-priced material(s) selected for estimate</div></section>}
+
+      {activeTab === 'hiring' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Hire our estimating team</h2><p className="mt-1 text-xs text-[#94a3b8]">Request estimating, takeoff, BIM, or project coordination support.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-[10px] text-[#94a3b8]">Service<select className="mt-1 w-full rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white"><option>Full project estimation</option><option>Quantity takeoff</option><option>BIM coordination</option><option>Project manager support</option></select></label><label className="text-[10px] text-[#94a3b8]">Target start date<input type="date" className="mt-1 w-full rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white" /></label></div><button type="button" onClick={() => setHiringSubmitted(true)} className="mt-4 rounded-lg bg-[#4edea3] px-4 py-2 text-xs font-bold text-[#07101f]">Send hiring request</button>{hiringSubmitted && <p className="mt-3 text-xs text-[#4edea3]">Request sent. A team lead will respond in the client workspace.</p>}</section>}
+
+      {activeTab === 'notifications' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Notifications and responses</h2><div className="mt-4 space-y-2">{['Final takeoff package delivered and ready to download.', 'Team lead responded to RFI-1042.', 'New project task assigned for client price review.'].map((notice) => <div key={notice} className="rounded-xl border border-[#222a3d] bg-[#0b1329] p-3 text-xs text-white"><span className="mr-2 text-[#e0b44a]">●</span>{notice}<p className="mt-1 pl-4 text-[10px] text-[#94a3b8]">Just now · linked to your active project</p></div>)}</div></section>}
 
       {/* ========================================================================= */}
       {/* TAB 1: PROJECT STATUS & LIVE MILESTONE TRACKER */}
@@ -1166,6 +1188,9 @@ Transaction ID: pi_3Pz7Q12eZvKYlo2C`;
           }}
         />
       )}
+
+      </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* MODAL 1: CLIENT RFI INSPECT & DIRECT CLARIFICATION RESPONSE */}
