@@ -774,14 +774,19 @@ export const WorkflowAutomationHub: React.FC = () => {
                   <h3 className="text-sm sm:text-base font-bold text-white font-sans">
                     {quote.title}
                   </h3>
+                  <p className="text-[11px] text-[#bbcabf] font-sans line-clamp-2">{quote.scopeSummary}</p>
 
                   <div className="flex items-center gap-4 text-[#86948a] text-[11px] pt-0.5 flex-wrap">
                     <span>
-                      Total Scope: <strong className="text-white">${quote.totalAmount.toLocaleString()}</strong>
+                      Project cost: <strong className="text-white">${quote.totalAmount.toLocaleString()}</strong>
                     </span>
                     <span>&bull;</span>
                     <span>
-                      Deposit Due: <strong className="text-[#4edea3]">${quote.requiredDepositAmount.toLocaleString()}</strong> ({quote.requiredDepositPercent}%)
+                      Pending cost: <strong className="text-[#ffcf70]">${Math.max(0, quote.totalAmount - (quote.status === 'paid_and_activated' ? quote.requiredDepositAmount : 0)).toLocaleString()}</strong>
+                    </span>
+                    <span>&bull;</span>
+                    <span>
+                      Deposit due: <strong className="text-[#4edea3]">${quote.requiredDepositAmount.toLocaleString()}</strong> ({quote.requiredDepositPercent}%)
                     </span>
                     <span>&bull;</span>
                     <span>Token: <code className="text-[#adc6ff]">{quote.approvalToken}</code></span>

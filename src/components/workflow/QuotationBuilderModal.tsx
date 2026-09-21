@@ -17,6 +17,17 @@ import {
 } from 'lucide-react';
 import { QuoteEntity, QuoteLineItem, IntakeRequestItem } from '../../types/workflow';
 
+const CSI_DIVISIONS = [
+  'Division 01 General Requirements', 'Division 02 Existing Conditions', 'Division 03 Concrete', 'Division 04 Masonry', 'Division 05 Metals',
+  'Division 06 Wood, Plastics & Composites', 'Division 07 Thermal & Moisture Protection', 'Division 08 Openings', 'Division 09 Finishes', 'Division 10 Specialties',
+  'Division 11 Equipment', 'Division 12 Furnishings', 'Division 13 Special Construction', 'Division 14 Conveying Equipment', 'Division 21 Fire Suppression',
+  'Division 22 Plumbing', 'Division 23 HVAC', 'Division 25 Integrated Automation', 'Division 26 Electrical', 'Division 27 Communications',
+  'Division 28 Electronic Safety & Security', 'Division 31 Earthwork', 'Division 32 Exterior Improvements', 'Division 33 Utilities', 'Division 34 Transportation',
+  'Division 35 Waterway & Marine Construction', 'Division 40 Process Interconnections', 'Division 41 Material Processing & Handling Equipment', 'Division 42 Process Heating, Cooling & Drying Equipment', 'Division 43 Process Gas & Liquid Handling',
+  'Division 44 Pollution & Waste Control Equipment', 'Division 45 Industry-Specific Manufacturing Equipment', 'Division 46 Water & Wastewater Equipment', 'Division 48 Electrical Power Generation', 'Division 49 Reserved for Future Use',
+  'VDC / BIM Coordination', 'General Estimating & Quantity Takeoff'
+];
+
 interface QuotationBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,6 +57,8 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
     intakeRequest?.scopeSummary ||
       'Complete turnkey cast-in-place concrete quantity takeoff, slurry wall reinforcement, and excavation leveling.'
   );
+  const [scopePreset, setScopePreset] = useState(intakeRequest?.scopeSummary || '');
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(true);
   const [markupPercent, setMarkupPercent] = useState<number>(10);
   const [bondingFee, setBondingFee] = useState<number>(1850);
   const [depositPercent, setDepositPercent] = useState<number>(25);
@@ -244,14 +257,29 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="block text-[11px] text-[#86948a] mb-1 font-mono">Scope Narrative &amp; Takeoff Specifications</label>
-              <textarea
+            <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-3">
+              <div>
+                <label className="block text-[11px] text-[#86948a] mb-1 font-mono">Client-linked scope preset</label>
+                <select
+                  value={scopePreset}
+                  onChange={(e) => { setScopePreset(e.target.value); if (e.target.value) setScopeSummary(e.target.value); }}
+                  className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded-lg text-white font-sans text-xs focus:outline-none focus:border-[#4edea3]"
+                >
+                  <option value="">Manual scope entry</option>
+                  {intakeRequest?.scopeSummary && <option value={intakeRequest.scopeSummary}>Auto-selected from {intakeRequest.clientCompany}</option>}
+                  <option value="Complete quantity takeoff, trade-specific pricing, and constructability review per issued drawings.">Standard estimating package</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[#4edea3]">Client, contact, and scope are linked to this draft.</p>
+              </div>
+              <div>
+                <label className="block text-[11px] text-[#86948a] mb-1 font-mono">Scope Narrative &amp; Takeoff Specifications</label>
+                <textarea
                 rows={2}
                 value={scopeSummary}
                 onChange={(e) => setScopeSummary(e.target.value)}
                 className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded-lg text-white font-sans text-xs focus:outline-none focus:border-[#4edea3]"
               />
+              </div>
             </div>
           </div>
 
@@ -288,14 +316,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                       onChange={(e) => handleUpdateLineItem(item.id, 'csiDivision', e.target.value)}
                       className="w-full px-2 py-1.5 bg-[#131b2e] border border-[#222a3d] rounded text-white text-xs focus:outline-none"
                     >
-                      <option value="Division 03 Concrete">Division 03 Concrete</option>
-                      <option value="Division 05 Metals">Division 05 Metals</option>
-                      <option value="Division 21 Fire Suppression">Division 21 Fire</option>
-                      <option value="Division 22 Plumbing">Division 22 Plumbing</option>
-                      <option value="Division 23 HVAC">Division 23 HVAC</option>
-                      <option value="Division 26 Electrical">Division 26 Electrical</option>
-                      <option value="Division 31 Earthwork">Division 31 Earthwork</option>
-                      <option value="VDC / BIM Coordination">VDC / BIM Coordination</option>
+                      {CSI_DIVISIONS.map((division) => <option key={division} value={division}>{division}</option>)}
                     </select>
                   </div>
 
@@ -414,6 +435,21 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 Required for Automated Activation
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-[#2d3449] bg-[#0b1326] overflow-hidden">
+            <button type="button" onClick={() => setEmailPreviewOpen((open) => !open)} className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#131b2e] transition-colors">
+              <span className="text-xs font-mono uppercase tracking-wider text-[#dae2fd] font-semibold">Quotation email draft preview</span>
+              <span className="text-[10px] font-mono text-[#4edea3]">{emailPreviewOpen ? 'Hide preview' : 'Show preview'}</span>
+            </button>
+            {emailPreviewOpen && <div className="border-t border-[#222a3d] p-4 text-xs text-[#bbcabf] space-y-2 font-sans">
+              <p><strong className="text-white">Subject:</strong> Quotation for {projectTitle} - {lineItems[0]?.csiDivision || 'Shop Drawing'}</p>
+              <p>Dear {clientName || 'Client'},</p>
+              <p>We are pleased to submit our quotation for the {projectTitle} project as outlined below:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 rounded-lg bg-[#131b2e] p-3 font-mono text-[11px]"><span>Client: {clientCompany}</span><span>Scope: {scopeSummary}</span><span>Total Quotation: ${totalAmount.toLocaleString()}</span><span>Pending Cost: ${Math.max(0, totalAmount - requiredDepositAmount).toLocaleString()}</span></div>
+              <p>Click here to pay ${requiredDepositAmount.toLocaleString()}: We confirm that our team will complete the work as per the agreed scope and deliver it within the specified timeframe.</p>
+              <p>Best regards,<br />Bid Exact Estimating Team</p>
+            </div>}
           </div>
         </div>
 
