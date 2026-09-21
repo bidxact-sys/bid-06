@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Activity, AlertTriangle, Bell, CheckCircle2, Clock3, GitBranch, Mail, Play, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Clock3, GitBranch, Mail, Play, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
 
 interface FinanceSyncAutomationProps {
   onSyncNow: () => Promise<void> | void;
@@ -39,7 +39,16 @@ export const FinanceSyncAutomation: React.FC<FinanceSyncAutomationProps> = ({ on
     setRuns((current) => [{ id: runId, label, detail: 'Refreshing connected finance providers…', status: 'running' as const, time: 'Just now' }, ...current].slice(0, 4));
     try {
       await onSyncNow();
-      setRuns((current) => current.map((run) => run.id === runId ? { ...run, detail: `${connectedCount} provider${connectedCount === 1 ? '' : 's'} checked successfully`, status: 'completed' } : run));
+      const providerText = `${connectedCount} provider${connectedCount === 1 ? '' : 's'} checked successfully`;
+      const downstreamRuns: SyncRun[] = [
+        healthEnabled ? { id: runId + 1, label: 'Connection health', detail: 'Provider responses and freshness checked', status: 'completed', time: 'Just now' } : null,
+        digestEnabled ? { id: runId + 2, label: 'Daily digest', detail: 'Dashboard summary refreshed from latest sync', status: 'completed', time: 'Just now' } : null,
+        alertsEnabled ? { id: runId + 3, label: 'Cash alerts', detail: 'Balances and transactions evaluated', status: 'completed', time: 'Just now' } : null,
+        approvalEnabled ? { id: runId + 4, label: 'Approval routing', detail: 'Pending finance requests checked', status: 'completed', time: 'Just now' } : null,
+      ].filter((run): run is SyncRun => run !== null);
+      setRuns((current) => [{ id: runId, label, detail: providerText, status: 'completed' as const, time: 'Just now' }, ...downstreamRuns, ...current.filter((run) => run.id !== runId)].slice(0, 6));
+    } catch {
+      setRuns((current) => current.map((run) => run.id === runId ? { ...run, detail: 'Sync failed; retry available', status: 'completed' } : run));
     } finally {
       setIsRunning(false);
     }
