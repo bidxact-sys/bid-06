@@ -28,8 +28,11 @@ export const TopNav: React.FC<TopNavProps> = ({
 }) => {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState<Array<{ id: string; title: string; time: string; desc: string; unread: boolean; type: 'quote' | 'delta' | 'info' | 'alert' }>>([]);
 
   const notifications = [
+    ...liveNotifications,
+
     {
       id: 'notif-1',
       title: 'RFI-2024-089 Delta Calculated',
@@ -55,6 +58,22 @@ export const TopNav: React.FC<TopNavProps> = ({
       type: 'alert',
     },
   ];
+
+  // Listen for new client quotation requests from the intake workflow.
+  useEffect(() => {
+    const handleQuoteIntake = (event: Event) => {
+      const detail = (event as CustomEvent<{ title: string; description: string; intakeId: string }>).detail;
+      const notification = { id: detail.intakeId, title: detail.title, time: 'Just now', desc: detail.description, unread: true, type: 'quote' as const };
+      setLiveNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)]);
+      if ('Notification' in window) {
+        const showDesktopAlert = () => new Notification('New quotation request', { body: detail.description, tag: detail.intakeId });
+        if (Notification.permission === 'granted') showDesktopAlert();
+        else if (Notification.permission === 'default') void Notification.requestPermission().then((permission) => { if (permission === 'granted') showDesktopAlert(); });
+      }
+    };
+    window.addEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
+    return () => window.removeEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
+  }, []);
 
   // Close menus on click outside
   useEffect(() => {
@@ -132,7 +151,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 <span className="text-xs font-semibold text-[#dae2fd] flex items-center gap-1.5">
                   Live Notifications & SLA Alerts
                   <span className="text-[10px] font-mono px-1.5 py-0.2 bg-[#ff7886]/20 text-[#ffb4ab] rounded">
-                    2 unread
+                    {liveNotifications.length + 2} unread
                   </span>
                 </span>
                 <button

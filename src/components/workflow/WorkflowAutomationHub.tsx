@@ -351,6 +351,13 @@ export const WorkflowAutomationHub: React.FC = () => {
   // Handle Intake creation
   const handleCreateNewIntake = (newIntake: IntakeRequestItem) => {
     setIntakeRequests((prev) => [newIntake, ...prev]);
+    window.dispatchEvent(new CustomEvent('bid-exact:quote-intake-received', {
+      detail: {
+        title: `New quotation request: ${newIntake.projectTitle}`,
+        description: `${newIntake.clientCompany} submitted a project for quotation.`,
+        intakeId: newIntake.id,
+      },
+    }));
     logWebhookEvent(
       'intake.received',
       'EmailIngestWorker',
