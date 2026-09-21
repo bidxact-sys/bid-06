@@ -137,7 +137,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             title="Notifications & SLA Alerts"
           >
             <Bell className="w-4 h-4" />
-            {notificationCount > 0 && (
+            {(notificationCount > 0 || liveNotifications.some((notification) => notification.unread)) && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff7886] rounded-full ring-2 ring-[#0b1326]" />
             )}
           </button>
@@ -151,7 +151,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 <span className="text-xs font-semibold text-[#dae2fd] flex items-center gap-1.5">
                   Live Notifications & SLA Alerts
                   <span className="text-[10px] font-mono px-1.5 py-0.2 bg-[#ff7886]/20 text-[#ffb4ab] rounded">
-                    {liveNotifications.length + 2} unread
+                    {liveNotifications.filter((notification) => notification.unread).length + 2} unread
                   </span>
                 </span>
                 <button
