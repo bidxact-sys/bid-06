@@ -18,6 +18,7 @@ import { ImportTransactionsModal } from './ImportTransactionsModal';
 import { ConnectFinancialAccountModal } from './ConnectFinancialAccountModal';
 import { FinancialConnectionsPanel, type Connection } from './FinancialConnectionsPanel';
 import { ProviderConfigurationPanel } from './ProviderConfigurationPanel';
+import { FinanceSyncAutomation } from './FinanceSyncAutomation';
 
 interface FinanceWorkflowViewProps {
   privacyMode: boolean;
@@ -91,6 +92,11 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
   const displayedTransactions = syncedTransactions || transactions;
   const displayedGoals = syncedGoals || goals;
   const syncError = accountsError || transactionsError || goalsError;
+  const connectedCount = connections.filter((connection) => connection.status === 'connected').length;
+  const syncNow = async () => {
+    if (!apiEnabled) return;
+    await Promise.all([refreshAccounts(), refreshTransactions(), refreshGoals()]);
+  };
 
   const totals = useMemo(() => {
     const assets = displayedAccounts.filter((account) => !['credit', 'loan'].includes(account.category)).reduce((sum, account) => sum + account.balance, 0);
@@ -217,6 +223,7 @@ export const FinanceWorkflowView: React.FC<FinanceWorkflowViewProps> = ({ privac
       </section>
 
       <FinancialConnectionsPanel connections={connections} onRequest={requestConnection} onApprove={approveConnection} onRemove={removeConnection} />
+      <FinanceSyncAutomation onSyncNow={syncNow} connectedCount={connectedCount} />
       <ProviderConfigurationPanel />
 
       <FinanceMetricCards
