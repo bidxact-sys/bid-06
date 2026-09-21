@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import { financeRoutes } from './server/finance/routes'
 import { stripeRoutes } from './server/stripe/routes'
+import { portalRoutes } from './server/portal/routes'
 
 export function createApp() {
   const app = express()
@@ -13,6 +14,7 @@ export function createApp() {
   })
   app.use('/api/stripe', stripeRoutes)
   app.use(express.json({ limit: '1mb' }))
+  app.use('/api/portal', portalRoutes)
   app.options('*', (_req, res) => res.sendStatus(204))
   app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'finance-backend' }))
   app.use('/api/finance', financeRoutes)

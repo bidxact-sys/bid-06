@@ -28,6 +28,27 @@ export const financeGoals = pgTable('finance_goals', {
   targetAmount: numeric('target_amount', { precision: 14, scale: 2 }).notNull(), currentAmount: numeric('current_amount', { precision: 14, scale: 2 }).default('0').notNull(), targetDate: date('target_date'), status: text('status').default('active').notNull(), ...timestamps,
 })
 
+export const portalEntities = pgTable('portal_entities', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedByDefaultAsIdentity(),
+  userId: text('user_id').notNull(),
+  entityType: text('entity_type').notNull(),
+  name: text('name').notNull(),
+  status: text('status').notNull(),
+  data: jsonb('data').default({}).notNull(),
+  ...timestamps,
+})
+
+export const portalAuditEvents = pgTable('portal_audit_events', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedByDefaultAsIdentity(),
+  userId: text('user_id').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: text('entity_id').notNull(),
+  action: text('action').notNull(),
+  beforeData: jsonb('before_data'),
+  afterData: jsonb('after_data'),
+  ...timestamps,
+})
+
 export const financeRecurringRules = pgTable('finance_recurring_rules', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedByDefaultAsIdentity(), userId: text('user_id').notNull(), scope: text('scope').notNull(), accountId: bigint('account_id', { mode: 'number' }).notNull(),
   type: text('type').notNull(), amount: numeric('amount', { precision: 14, scale: 2 }).notNull(), frequency: text('frequency').notNull(), nextRunDate: date('next_run_date').notNull(), description: text('description').notNull(), category: text('category'), isActive: boolean('is_active').default(true).notNull(), ...timestamps,

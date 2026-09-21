@@ -100,6 +100,8 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
   const [quoteApproved, setQuoteApproved] = useState(false);
   const [assignmentMode, setAssignmentMode] = useState<'Smart assigned' | 'Manual assigned' | 'Outsourced'>('Smart assigned');
+  const [demoMode, setDemoMode] = useState(true);
+  const resetDemoScenario = () => { setQuoteMessage(''); setQuoteSubmitted(false); setQuoteApproved(false); setTeamRequests([]); setCompanyTasks([{ title: 'Review foundation scope', assignee: 'Maya Chen', status: 'In progress' }, { title: 'Confirm material allowances', assignee: 'Jordan Blake', status: 'To do' }]); setPortalMessages([{ from: 'Maya Chen', text: 'The takeoff package is ready for your review.', time: '10 min ago' }, { from: 'You', text: 'Please prioritize the foundation scope.', time: '28 min ago' }]); setActiveTab('projects'); };
   const [clientPriceList, setClientPriceList] = useState([{ code: 'CL-MAT-001', name: 'Client concrete allowance', unit: 'CY', price: 172.5 }, { code: 'CL-MAT-002', name: 'Client rebar allowance', unit: 'LB', price: 0.86 }]);
   const [selectedEstimateMaterials, setSelectedEstimateMaterials] = useState<string[]>([]);
 
@@ -555,7 +557,8 @@ methodology and audited by Bid Exact Senior Estimators.
       {/* Navigation Sub-Tabs */}
       <div className="grid gap-4 lg:grid-cols-[210px_minmax(0,1fr)] items-start">
         <aside className="sticky top-4 rounded-2xl border border-[#222a3d] bg-[#0d1728] p-2 shadow-xl">
-          <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Client workspace</div>
+          <div className="flex items-center justify-between gap-2 px-3 py-2"><div className="text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Client workspace</div><span className="rounded-full bg-[#e0b44a]/15 px-2 py-0.5 text-[9px] font-bold text-[#e0b44a]">Demo mode</span></div>
+          <button type="button" onClick={() => { setDemoMode((enabled) => !enabled); resetDemoScenario(); }} className="mx-2 mb-2 w-[calc(100%-1rem)] rounded-lg border border-[#2b3851] px-3 py-2 text-left text-[10px] font-semibold text-[#94a3b8] hover:border-[#38bdf8] hover:text-white">{demoMode ? 'Reset demo scenario' : 'Start demo scenario'}</button>
           <div className="space-y-1">
             {[['projects','Overview',Building2],['execution','Project execution',Layers],['tasks','Tasks',CheckCircle2],['people','People',UserCheck],['messages','Messages',Mail],['quote','New quotation',Upload],['pricing','Estimate pricing',DollarSign],['finance','Finance & allocation',FileSpreadsheet],['rfis','RFIs & responses',FileQuestion],['deliverables','Delivered files',FolderDown],['hiring','Hire approved team',UserCheck],['contracts','Contracts & invoices',FileText],['documents','Documents',FolderArchive],['notifications','Notifications',AlertCircle]].map(([tab,label,Icon]) => <button key={tab as string} type="button" onClick={() => setActiveTab(tab as typeof activeTab)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${activeTab === tab ? 'bg-[#38bdf8] font-bold text-[#0b1326]' : 'text-[#94a3b8] hover:bg-[#131b2e] hover:text-white'}`}><Icon className="h-3.5 w-3.5" /><span>{label as string}</span>{tab === 'notifications' && <span className="ml-auto rounded-full bg-[#e0b44a] px-1.5 text-[9px] font-bold text-[#0b1326]">3</span>}</button>)}
           </div>
