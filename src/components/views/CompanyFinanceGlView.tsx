@@ -33,6 +33,7 @@ interface GlTransaction {
   account: string;
   type: 'credit' | 'debit';
   amount: number;
+  currency: string;
   status: 'Reconciled' | 'Pending';
 }
 
@@ -45,6 +46,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 142000,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -55,6 +57,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 88500,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -65,6 +68,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Payroll Reserve ••2041',
     type: 'debit',
     amount: 64250,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -75,6 +79,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Corporate Amex ••4102',
     type: 'debit',
     amount: 14500,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -85,6 +90,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 62000,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -95,6 +101,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'debit',
     amount: 11200,
+    currency: 'USD',
     status: 'Pending',
   },
 ];
@@ -118,6 +125,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
     account: 'Payroll Reserve ••2041',
     type: 'debit',
     amount: run.totalGross + run.totalTaxesWithheld,
+    currency: 'USD',
     status: run.status === 'Paid' ? 'Reconciled' : 'Pending',
   }));
 
@@ -129,10 +137,11 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
     account: 'Operating Checking ••8491',
     type: 'debit',
     amount: assignment.budget,
+    currency: assignment.currency || 'USD',
     status: assignment.status === 'Approved' ? 'Pending' : 'Pending',
   }));
 
-  const ledgerTransactions = [...payrollExpenses, ...outsourcedExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
+  const ledgerTransactions = [...payrollExpenses, ...outsourcedExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, currency: expense.currency || 'PKR', status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
 
   const filteredTransactions = ledgerTransactions.filter((t) => {
     const matchesSearch =
@@ -307,7 +316,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                 <th className="p-3">Description</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Account</th>
-                <th className="p-3 text-right">Amount</th>
+                <th className="p-3 text-right">Amount / Currency</th>
                 <th className="p-3 text-center">Status</th>
               </tr>
             </thead>
@@ -326,7 +335,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                       tx.type === 'credit' ? 'text-[#4edea3]' : 'text-[#ffb4ab]'
                     }`}
                   >
-                    {tx.type === 'credit' ? '+' : '-'}${tx.amount.toLocaleString()}
+                    {tx.type === 'credit' ? '+' : '-'}{new Intl.NumberFormat(undefined, { style: 'currency', currency: tx.currency }).format(tx.amount)}
                   </td>
                   <td className="p-3 text-center">
                     <span

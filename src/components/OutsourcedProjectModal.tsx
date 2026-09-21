@@ -9,6 +9,7 @@ export interface OutsourcedProjectAssignment {
   startDate: string;
   dueDate: string;
   budget: number;
+  currency?: string;
   paymentModel: string;
   status: string;
 }
@@ -23,7 +24,7 @@ interface OutsourcedProjectModalProps {
 const inputClass = 'w-full rounded-md border border-[#303a52] bg-[#10182a] px-3 py-2 text-sm text-[#eef2ff] outline-none focus:border-[#4edea3]';
 
 export const OutsourcedProjectModal: React.FC<OutsourcedProjectModalProps> = ({ isOpen, projects, onClose, onCreate }) => {
-  const [form, setForm] = useState({ project: projects[0] ?? '', provider: '', scope: '', startDate: new Date().toISOString().slice(0, 10), dueDate: '', budget: '', paymentModel: 'Fixed fee', status: 'Pending approval' });
+  const [form, setForm] = useState({ project: projects[0] ?? '', provider: '', scope: '', startDate: new Date().toISOString().slice(0, 10), dueDate: '', budget: '', currency: 'PKR', paymentModel: 'Fixed fee', status: 'Outsourced · active' });
   if (!isOpen) return null;
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
@@ -48,6 +49,7 @@ export const OutsourcedProjectModal: React.FC<OutsourcedProjectModalProps> = ({ 
         <label className="text-xs text-[#b5c0d8]">Start date<div className="relative"><CalendarDays className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#7785a5]" /><input type="date" className={`${inputClass} pl-9`} value={form.startDate} onChange={(e) => update('startDate', e.target.value)} /></div></label>
         <label className="text-xs text-[#b5c0d8]">Due date<input type="date" className={inputClass} value={form.dueDate} onChange={(e) => update('dueDate', e.target.value)} /></label>
         <label className="text-xs text-[#b5c0d8]">Approved budget<div className="relative"><DollarSign className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#7785a5]" /><input type="number" min="1" step="0.01" className={`${inputClass} pl-9`} value={form.budget} onChange={(e) => update('budget', e.target.value)} placeholder="0.00" /></div></label>
+        <label className="text-xs text-[#b5c0d8]">Currency<select className={inputClass} value={form.currency} onChange={(e) => update('currency', e.target.value)}><option>PKR</option><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>AED</option><option>SAR</option></select></label>
         <label className="text-xs text-[#b5c0d8]">Payment model<select className={inputClass} value={form.paymentModel} onChange={(e) => update('paymentModel', e.target.value)}><option>Fixed fee</option><option>Milestone based</option><option>Hourly cap</option><option>Monthly retainer</option></select></label>
         <label className="text-xs text-[#b5c0d8]">Approval status<select className={inputClass} value={form.status} onChange={(e) => update('status', e.target.value)}><option>Pending approval</option><option>Approved</option><option>Contract sent</option></select></label>
       </div>
