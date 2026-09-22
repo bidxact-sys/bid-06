@@ -74,6 +74,11 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   const dayNamesShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const quarterNumber = Math.floor(currentMonth / 3) + 1;
+  const quarterStartMonth = quarterNumber * 3 - 2;
+  const quarterEndMonth = quarterNumber * 3;
+  const quarterLabel = `Q${quarterNumber} ${currentYear}`;
+  const quarterRange = `${monthNames[quarterStartMonth - 1].slice(0, 3)}–${monthNames[quarterEndMonth - 1].slice(0, 3)} ${currentYear}`;
 
   // Month navigation handlers
   const handlePrevMonth = () => {
@@ -389,18 +394,17 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-[#86948a] mb-1">
-              <span className="text-[#4edea3] font-bold">COMPLIANCE TIMELINE VISUALIZER</span>
+              <span className="text-[#4edea3] font-bold">COMPLIANCE TIMELINE</span>
               <span>/</span>
               <span className="text-white font-semibold">{monthNames[currentMonth]} {currentYear}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
+              <span className="rounded-full border border-[#4edea3]/30 bg-[#4edea3]/10 px-2 py-0.5 text-[9px] font-bold tracking-wide text-[#6ee7b7]">{quarterLabel}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <CalendarDays className="w-6 h-6 text-[#4edea3]" />
-              Executive Compliance & Reminder Calendar
+              <span>Executive Compliance Calendar</span>
             </h2>
             <p className="text-xs text-[#86948a] mt-0.5 max-w-2xl">
-              Aggregated view of statutory tax deposits, general contractor client relationship calls, sealed tender deadlines,
-              and banking cutoffs mapped against regulatory due dates.
+              {quarterRange} planning horizon · statutory filings, client calls, tender deadlines, and banking cutoffs in one view.
             </p>
           </div>
 
@@ -414,7 +418,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Sep 2024 (Q3 Taxes)
+              Sep 2024 · Taxes
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 9)}
@@ -424,7 +428,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Oct 2024 (Franchise)
+              Oct 2024 · Franchise
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 10)}
@@ -434,7 +438,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Nov 2024 (1099 Prep)
+              Nov 2024 · 1099 prep
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 11)}
@@ -444,7 +448,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Dec 2024 (Year-End)
+              Dec 2024 · Year-end
             </button>
           </div>
         </div>
