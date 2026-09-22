@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, FileQuestion, Plus, Paperclip } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, FileQuestion, Plus, Mic, MicOff, Loader2 } from 'lucide-react';
 import { RfiItem, RfiPriority } from '../types';
 
 interface NewRfiModalProps {
@@ -21,6 +21,108 @@ export const NewRfiModal: React.FC<NewRfiModalProps> = ({
   const [assignedLeadName, setAssignedLeadName] = useState('Marcus Vance');
   const [description, setDescription] = useState('');
   const [deltaCost, setDeltaCost] = useState('');
+
+  // Voice dictation state
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Clean up recognition instance when unmounting or modal closes
+  useEffect(() => {
+    if (!isOpen && recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // noop
+      }
+      setIsListening(false);
+    }
+  }, [isOpen]);
+
+  const toggleVoiceDictation = () => {
+    setSpeechError(null);
+
+    // If currently listening, stop
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // noop
+        }
+      }
+      setIsListening(false);
+      return;
+    }
+
+    // Check browser compatibility for Web Speech API
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechError('Web Speech API is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      let accumulatedFinal = '';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setSpeechError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcriptChunk = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            accumulatedFinal += transcriptChunk + ' ';
+          } else {
+            interimTranscript += transcriptChunk;
+          }
+        }
+
+        setDescription((prev) => {
+          // Append transcript cleanly
+          const base = prev.trim();
+          const spoken = (accumulatedFinal + interimTranscript).trim();
+          if (!base) return spoken;
+          // If previous already ends with part of the speech, handle safely
+          return `${base} ${spoken}`.replace(/\s+/g, ' ');
+        });
+
+        // Reset buffer once applied to avoid duplication
+        accumulatedFinal = '';
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed') {
+          setSpeechError('Microphone access was denied. Please allow microphone permissions.');
+        } else if (event.error === 'no-speech') {
+          // Silence timeout, don't show noisy error
+        } else {
+          setSpeechError(`Speech recognition notice: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      setSpeechError(err?.message || 'Could not start speech recognition.');
+      setIsListening(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -204,16 +306,60 @@ export const NewRfiModal: React.FC<NewRfiModalProps> = ({
 
           {/* Detailed Question / Description */}
           <div>
-            <label className="block text-xs font-mono uppercase text-[#86948a] font-semibold mb-1">
-              Technical Query & Drawing References
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Cite sheet numbers, conflicting spec sections, and potential takeoff delta..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#0b1326] border border-[#222a3d] focus:border-[#4edea3] rounded-md p-3 text-xs text-[#dae2fd] outline-none resize-none leading-relaxed"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-mono uppercase text-[#86948a] font-semibold">
+                Technical Query & Drawing References
+              </label>
+              <button
+                type="button"
+                id="rfi-voice-dictate-btn"
+                onClick={toggleVoiceDictation}
+                title={isListening ? 'Stop voice recording' : 'Dictate with microphone (Web Speech API)'}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-medium transition-all cursor-pointer border ${
+                  isListening
+                    ? 'bg-red-500/20 text-red-400 border-red-500/40 animate-pulse shadow-sm shadow-red-500/20'
+                    : 'bg-[#1b2339] text-[#4edea3] hover:bg-[#232d48] border-[#2d3449] hover:border-[#4edea3]/40'
+                }`}
+              >
+                {isListening ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+                    <Mic className="w-3.5 h-3.5" />
+                    <span>Listening... (Click to stop)</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-3.5 h-3.5" />
+                    <span>Voice Dictate</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="relative">
+              <textarea
+                rows={3}
+                id="rfi-description-input"
+                placeholder="Cite sheet numbers, conflicting spec sections, and potential takeoff delta (or click 'Voice Dictate' to speak)..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`w-full bg-[#0b1326] border rounded-md p-3 text-xs text-[#dae2fd] outline-none resize-none leading-relaxed transition-colors ${
+                  isListening ? 'border-red-500/50 ring-1 ring-red-500/30' : 'border-[#222a3d] focus:border-[#4edea3]'
+                }`}
+              />
+              {isListening && (
+                <div className="absolute bottom-2 right-2 flex items-center gap-1.5 text-[10px] font-mono text-red-400 bg-[#131b2e]/90 px-2 py-0.5 rounded border border-red-500/30 pointer-events-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                  Transcribing speech...
+                </div>
+              )}
+            </div>
+
+            {speechError && (
+              <p className="mt-1 text-[11px] text-[#ffb4ab] font-mono">
+                {speechError}
+              </p>
+            )}
           </div>
 
           {/* Actions */}
