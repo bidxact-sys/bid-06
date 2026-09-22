@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { CompanyDataImportPanel } from './CompanyDataImportPanel';
 import { AddCompanyExpenseModal, type CompanyExpense } from './AddCompanyExpenseModal';
-import type { PayrollRunItem } from '../../types';
+import type { PayrollRunItem, ConnectedBankAccount } from '../../types';
 import type { OutsourcedProjectAssignment } from '../OutsourcedProjectModal';
+import { SecretKeysIntegrationsPanel } from '../integrations/SecretKeysIntegrationsPanel';
 import {
   Landmark,
   ArrowUpRight,
@@ -16,13 +17,17 @@ import {
   Search,
   Filter,
   Wallet,
-  FileSpreadsheet
+  FileSpreadsheet,
+  KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 
 interface CompanyFinanceGlViewProps {
   onSwitchToPersonalFinance: () => void;
   payrollRuns: PayrollRunItem[];
   outsourcedAssignments: OutsourcedProjectAssignment[];
+  connectedAccounts?: ConnectedBankAccount[];
+  onNavigateTab?: (tab: any) => void;
 }
 
 interface GlTransaction {
@@ -110,11 +115,14 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   onSwitchToPersonalFinance,
   payrollRuns,
   outsourcedAssignments,
+  connectedAccounts = [],
+  onNavigateTab,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [isKeysPanelOpen, setIsKeysPanelOpen] = useState(false);
   const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
 
   const payrollExpenses = payrollRuns.map((run): GlTransaction => ({
@@ -175,6 +183,17 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
+            onClick={() => setIsKeysPanelOpen((prev) => !prev)}
+            className={`h-9 px-3.5 border rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+              isKeysPanelOpen
+                ? 'bg-[#4edea3] text-[#003824] border-[#4edea3]'
+                : 'bg-[#131b2e] hover:bg-[#171f33] border-[#4edea3]/40 text-[#4edea3]'
+            }`}
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>{isKeysPanelOpen ? 'Hide API Keys' : 'Payment API Keys'}</span>
+          </button>
+          <button
             onClick={() => setIsImportOpen(true)}
             className="h-9 px-3.5 bg-[#4edea3] hover:bg-[#63edb5] text-[#06251a] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
           >
@@ -212,6 +231,61 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Secret Keys Direct Portal Panel */}
+      {isKeysPanelOpen && (
+        <div className="mb-4">
+          <SecretKeysIntegrationsPanel />
+        </div>
+      )}
+
+      {/* Connected Fintech Accounts (Wise, Payoneer, Mercury) Live Balances Bar */}
+      {connectedAccounts.length > 0 && (
+        <div className="bg-[#131b2e] border border-[#222a3d] rounded-lg p-3.5 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-[#4edea3]" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                Institutional Bank Feeds (Wise, Payoneer &amp; Mercury)
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-[#4edea3]/15 text-[#4edea3] rounded font-bold">
+                LIVE
+              </span>
+            </div>
+            {onNavigateTab && (
+              <button
+                onClick={() => onNavigateTab('connected-banks')}
+                className="text-xs font-mono text-[#4edea3] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Partner Approvals &amp; Transfer Limits</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {connectedAccounts.map((acc) => (
+              <div
+                key={acc.id}
+                className="bg-[#0b1326] border border-[#222a3d] rounded p-2.5 flex items-center justify-between"
+              >
+                <div>
+                  <div className="text-[10px] font-mono text-[#86948a] uppercase">{acc.provider} Account</div>
+                  <div className="text-xs font-semibold text-white truncate max-w-[170px]">{acc.accountName}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold font-mono text-[#4edea3]">
+                    ${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[10px] font-mono text-[#86948a]">
+                    Limit: ≤ ${acc.autoApprovalLimit.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 4 Financial KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

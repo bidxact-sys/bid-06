@@ -25,6 +25,8 @@ import {
   FINANCIAL_CONSTANTS,
 } from '../../utils/financialRulesEngine';
 import { FinancialRulesAuditorModal } from '../rules/FinancialRulesAuditorModal';
+import { SecretKeysIntegrationsPanel } from '../integrations/SecretKeysIntegrationsPanel';
+import { KeyRound } from 'lucide-react';
 
 export interface InvoiceRecord {
   id: string;
@@ -115,6 +117,7 @@ export const InvoicesArView: React.FC<InvoicesArViewProps> = ({
   const [invoices, setInvoices] = useState<InvoiceRecord[]>(INITIAL_INVOICES);
   const [searchTerm, setSearchTerm] = useState('');
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isKeysPanelOpen, setIsKeysPanelOpen] = useState(false);
 
   // Payment Recording Modal State
   const [collectingInvoice, setCollectingInvoice] = useState<InvoiceRecord | null>(null);
@@ -241,6 +244,17 @@ export const InvoicesArView: React.FC<InvoicesArViewProps> = ({
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
+            onClick={() => setIsKeysPanelOpen((prev) => !prev)}
+            className={`h-9 px-3.5 border rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+              isKeysPanelOpen
+                ? 'bg-[#4edea3] text-[#003824] border-[#4edea3]'
+                : 'bg-[#131b2e] hover:bg-[#171f33] border-[#4edea3]/40 text-[#4edea3]'
+            }`}
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>{isKeysPanelOpen ? 'Hide API Keys' : 'Payment API Keys'}</span>
+          </button>
+          <button
             onClick={() => setIsRulesModalOpen(true)}
             className="h-9 px-3.5 bg-[#171f33] hover:bg-[#222a3d] border border-[#2d3449] rounded-md text-xs font-mono text-[#4edea3] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
           >
@@ -271,6 +285,13 @@ export const InvoicesArView: React.FC<InvoicesArViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Secret Keys Direct Portal Panel */}
+      {isKeysPanelOpen && (
+        <div className="mb-4">
+          <SecretKeysIntegrationsPanel />
+        </div>
+      )}
 
       {/* 4 Certified AR KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

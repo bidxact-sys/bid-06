@@ -43,6 +43,7 @@ import { CompanyDetailView } from './components/views/CompanyDetailView';
 import { ClientPortalView } from './components/views/ClientPortalView';
 import { CompanyRemindersView } from './components/views/CompanyRemindersView';
 import { EmployeePortalView } from './components/views/EmployeePortalView';
+import { ConnectedBanksView } from './components/views/ConnectedBanksView';
 
 // Enterprise ERP Initial System Data
 import {
@@ -54,6 +55,8 @@ import {
   INITIAL_PARTNERS,
   INITIAL_PARTNER_PAYOUTS,
   INITIAL_EMERGENCY_FUND,
+  INITIAL_CONNECTED_ACCOUNTS,
+  INITIAL_TRANSFER_REQUESTS,
 } from './data/systemData';
 import { INITIAL_COMPANY_REMINDERS } from './data/reminderData';
 import {
@@ -67,6 +70,8 @@ import {
   EmergencyFundState,
   CommissionSettingsState,
   CompanyReminderItem,
+  ConnectedBankAccount,
+  BankTransferRequest,
 } from './types';
 import {
   getCommissionSettings,
@@ -110,6 +115,205 @@ export default function App() {
   const [partners, setPartners] = useState<PartnerItem[]>(INITIAL_PARTNERS);
   const [partnerPayouts, setPartnerPayouts] = useState<PartnerPayoutRecord[]>(INITIAL_PARTNER_PAYOUTS);
   const [emergencyFund, setEmergencyFund] = useState<EmergencyFundState>(INITIAL_EMERGENCY_FUND);
+
+  // Connected Institutional Accounts (Wise, Payoneer, Mercury) & Approval State
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedBankAccount[]>(() => {
+    const saved = localStorage.getItem('bid_exact_connected_bank_accounts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_CONNECTED_ACCOUNTS;
+  });
+
+  const [transferRequests, setTransferRequests] = useState<BankTransferRequest[]>(() => {
+    const saved = localStorage.getItem('bid_exact_bank_transfer_requests');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_TRANSFER_REQUESTS;
+  });
+
+  // Persist bank accounts
+  useEffect(() => {
+    localStorage.setItem('bid_exact_connected_bank_accounts', JSON.stringify(connectedAccounts));
+  }, [connectedAccounts]);
+
+  // Persist transfer requests
+  useEffect(() => {
+    localStorage.setItem('bid_exact_bank_transfer_requests', JSON.stringify(transferRequests));
+  }, [transferRequests]);
+
+  const handleUpdateAccountLimits = (accountId: string, newAutoLimit: number, newDualSignOffLimit: number) => {
+    setConnectedAccounts((prev) =>
+      prev.map((acc) =>
+        acc.id === accountId
+          ? {
+              ...acc,
+              autoApprovalLimit: newAutoLimit,
+              dualSignOffThreshold: newDualSignOffLimit,
+            }
+          : acc
+      )
+    );
+  };
+
+  const handleAddAccount = (newAccount: ConnectedBankAccount) => {
+    setConnectedAccounts((prev) => {
+      const exists = prev.some((a) => a.id === newAccount.id || a.provider === newAccount.provider);
+      if (exists) {
+        return prev.map((a) =>
+          a.id === newAccount.id || a.provider === newAccount.provider ? newAccount : a
+        );
+      }
+      return [...prev, newAccount];
+    });
+  };
+
+  const handleRemoveAccount = (accountId: string) => {
+    setConnectedAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
+  };
+
+  const handleCreateTransferRequest = (newRequest: BankTransferRequest) => {
+    setTransferRequests((prev) => [newRequest, ...prev]);
+
+    // If auto_approved, immediately deduct pending hold or update available balance
+    if (newRequest.status === 'auto_approved') {
+      setConnectedAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.id === newRequest.accountId) {
+            return {
+              ...acc,
+              availableBalance: Math.max(0, acc.availableBalance - newRequest.amount),
+              pendingHold: acc.pendingHold + newRequest.amount,
+            };
+          }
+          return acc;
+        })
+      );
+    }
+  };
+
+  const handlePartnerApprovalAction = (
+    requestId: string,
+    partnerId: string,
+    partnerName: string,
+    action: 'approved' | 'rejected',
+    notes?: string
+  ) => {
+    setTransferRequests((prev) =>
+      prev.map((req) => {
+        if (req.id === requestId) {
+          const newApprovals = [
+            ...req.approvals.filter((a) => a.partnerId !== partnerId),
+            {
+              partnerId,
+              partnerName,
+              action,
+              timestamp: new Date().toISOString(),
+              notes,
+            },
+          ];
+
+          let newStatus = req.status;
+          if (action === 'rejected') {
+            newStatus = 'rejected';
+          } else {
+            // Check if approval requirements met
+            const targetAcc = connectedAccounts.find((a) => a.id === req.accountId);
+            const reqApprovalsCount = targetAcc ? targetAcc.requiredPartnerApprovals : 1;
+            const approvedCount = newApprovals.filter((a) => a.action === 'approved').length;
+
+            if (approvedCount >= reqApprovalsCount) {
+              newStatus = 'approved';
+            }
+          }
+
+          return {
+            ...req,
+            status: newStatus,
+            approvals: newApprovals,
+          };
+        }
+        return req;
+      })
+    );
+  };
+
+  const handleExecuteApprovedTransfer = (requestId: string) => {
+    const req = transferRequests.find((r) => r.id === requestId);
+    if (!req) return;
+
+    const executionTxnId = `TXN-BANK-${Date.now().toString().slice(-6)}`;
+
+    // 1. Mark request executed
+    setTransferRequests((prev) =>
+      prev.map((r) =>
+        r.id === requestId
+          ? {
+              ...r,
+              status: 'executed',
+              executionTxnId,
+              executedAt: new Date().toISOString(),
+            }
+          : r
+      )
+    );
+
+    // 2. Deduct ledger balance from bank account
+    setConnectedAccounts((prev) =>
+      prev.map((acc) => {
+        if (acc.id === req.accountId) {
+          const newBalance = Math.max(0, acc.balance - req.amount);
+          const newAvail = Math.max(0, acc.availableBalance - req.amount);
+          const newHold = Math.max(0, acc.pendingHold - req.amount);
+          return {
+            ...acc,
+            balance: newBalance,
+            availableBalance: newAvail,
+            pendingHold: newHold,
+            lastSyncedAt: new Date().toISOString(),
+          };
+        }
+        return acc;
+      })
+    );
+
+    // 3. Mirror as corporate Cash Transaction outflow in Treasury
+    const newTxn: CashTransaction = {
+      id: executionTxnId,
+      date: new Date().toISOString().slice(0, 10),
+      description: `${req.accountName}: ${req.purpose}`,
+      category: req.transactionType === 'partner_draw' ? 'Partner Distribution' : 'Operating Overhead',
+      counterparty: req.recipientName,
+      type: 'outflow',
+      amount: req.amount,
+      status: 'cleared',
+      paymentMethod: `${req.provider.toUpperCase()} Transfer (${req.recipientDetails})`,
+      account: req.accountName,
+      referenceNumber: `AUTH-${req.id}`,
+    };
+
+    setTransactions((prev) => [newTxn, ...prev]);
+  };
+
+  const handleRefreshBalances = () => {
+    // Simulate real-time API sync refresh from Wise, Payoneer & Mercury
+    setConnectedAccounts((prev) =>
+      prev.map((acc) => ({
+        ...acc,
+        lastSyncedAt: new Date().toISOString(),
+        status: 'connected',
+      }))
+    );
+  };
 
   // Company Reminders & Compliance State
   const [reminders, setReminders] = useState<CompanyReminderItem[]>(INITIAL_COMPANY_REMINDERS);
@@ -451,6 +655,7 @@ export default function App() {
               transactions={transactions}
               onAddTransaction={handleCreateTransaction}
               onNavigateTab={handleSelectTab}
+              connectedAccounts={connectedAccounts}
             />
           ) : activeTab === 'projects' ? (
             <ProjectTrackingOperations
@@ -459,13 +664,34 @@ export default function App() {
               onOutsourcedAssignment={(assignment) => setOutsourcedAssignments((current) => current.some((item) => item.id === assignment.id) ? current : [assignment, ...current])}
             />
           ) : activeTab === 'finance' ? (
-  <CompanyFinanceGlView
-  outsourcedAssignments={outsourcedAssignments}
-  payrollRuns={payrollRuns}
-  onSwitchToPersonalFinance={() => {
+            <CompanyFinanceGlView
+              outsourcedAssignments={outsourcedAssignments}
+              payrollRuns={payrollRuns}
+              connectedAccounts={connectedAccounts}
+              onNavigateTab={handleSelectTab}
+              onSwitchToPersonalFinance={() => {
                 setActiveWorkspace('personal-finance');
                 localStorage.setItem('bid_exact_active_workspace', 'personal-finance');
               }}
+            />
+          ) : activeTab === 'connected-banks' ? (
+            <ConnectedBanksView
+              accounts={connectedAccounts}
+              transferRequests={transferRequests}
+              partners={partners}
+              currentUserId="PARTNER-01"
+              onUpdateAccountLimits={handleUpdateAccountLimits}
+              onUpdateAccount={(updatedAcc) => {
+                setConnectedAccounts((prev) =>
+                  prev.map((acc) => (acc.id === updatedAcc.id ? updatedAcc : acc))
+                );
+              }}
+              onAddAccount={handleAddAccount}
+              onRemoveAccount={handleRemoveAccount}
+              onCreateTransferRequest={handleCreateTransferRequest}
+              onPartnerApprovalAction={handlePartnerApprovalAction}
+              onExecuteApprovedTransfer={handleExecuteApprovedTransfer}
+              onRefreshBalances={handleRefreshBalances}
             />
           ) : activeTab === 'hr-directory' ? (
             <EmployeeHrView
@@ -505,6 +731,9 @@ export default function App() {
               payouts={partnerPayouts}
               onExecutePayout={handleExecutePartnerPayout}
               onUpdatePartner={handleUpdatePartner}
+              connectedAccounts={connectedAccounts}
+              transferRequests={transferRequests}
+              onNavigateTab={handleSelectTab}
             />
           ) : activeTab === 'emergency-fund' ? (
             <EmergencyFundView

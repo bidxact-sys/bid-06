@@ -28,6 +28,8 @@ import {
   FileDown,
   Zap,
   Users,
+  RotateCcw,
+  Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -47,6 +49,7 @@ import { EscalateRfiModal } from './EscalateRfiModal';
 import { ResourceCapacityPlanningModule } from './ResourceCapacityPlanningModule';
 import { NavTabId } from './Sidebar';
 import { OutsourcedProjectModal, type OutsourcedProjectAssignment } from './OutsourcedProjectModal';
+import { DeliveryPreviewModal } from './DeliveryPreviewModal';
 
 interface ProjectTrackingOperationsProps {
   onOpenNewTakeoff?: () => void;
@@ -159,6 +162,11 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
   const [isOutsourcedModalOpen, setIsOutsourcedModalOpen] = useState(false);
   const [outsourcedAssignments, setOutsourcedAssignments] = useState<OutsourcedProjectAssignment[]>([]);
   const [escalateProject, setEscalateProject] = useState<ProjectTrackItem | null>(null);
+
+  // Delivery Preview & Reversal State
+  const [deliveryPreviewProject, setDeliveryPreviewProject] = useState<ProjectTrackItem | null>(null);
+  const [deliveryPreviewArchived, setDeliveryPreviewArchived] = useState<ArchivedDeliverableItem | null>(null);
+  const [isDeliveryPreviewDelivered, setIsDeliveryPreviewDelivered] = useState(false);
 
   // Toast / Feedback State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -369,11 +377,18 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
     showToast('Milestone progress updated in operational ledger.');
   };
 
+  // Open delivery preview before actually delivering
+  const handlePromptDeliveryPreview = (project: ProjectTrackItem) => {
+    setDeliveryPreviewProject(project);
+    setDeliveryPreviewArchived(null);
+    setIsDeliveryPreviewDelivered(false);
+  };
+
   const handleReleasePackage = (projectId: string) => {
     const target = projects.find((p) => p.id === projectId);
     if (!target) return;
 
-    // Archive the project
+    // Archive the project and preserve its original representation for seamless reversal
     const newArchived: ArchivedDeliverableItem = {
       id: `arch-${Date.now()}`,
       packageCode: `PKG-${target.id.replace('BID-2024-', 'DEL-')}`,
@@ -392,11 +407,69 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
         signers: `Signed: ${target.leadEstimators.map((e) => e.name).join(' & ')}`,
       },
       fileSize: 'ZIP (94MB)',
+      originalProject: target,
     };
 
     setArchived((prev) => [newArchived, ...prev]);
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
-    showToast(`Package ${target.title} released & moved to Delivered Archive vault.`);
+    showToast(`Package "${target.title}" delivered & moved to Archive. (Reversible anytime)`);
+  };
+
+  // Reverse delivery: restore package back to active in-flight projects
+  const handleReverseDelivery = (archivedId: string) => {
+    const targetArchived = archived.find((a) => a.id === archivedId);
+    if (!targetArchived) return;
+
+    let restoredProject: ProjectTrackItem;
+
+    if (targetArchived.originalProject) {
+      restoredProject = { ...targetArchived.originalProject };
+    } else {
+      // Reconstruct project track item if original was not cached
+      const reconstructedId = targetArchived.packageCode.includes('PKG-DEL-')
+        ? targetArchived.packageCode.replace('PKG-DEL-', 'BID-2024-')
+        : `BID-2024-${targetArchived.id.slice(-3)}`;
+
+      restoredProject = {
+        id: reconstructedId,
+        title: targetArchived.packageName,
+        gc: targetArchived.gc,
+        scopeType: targetArchived.scopeSummary.replace('Final Deliverable • ', ''),
+        status: 'QUALITY_AUDIT',
+        statusLabel: 'Reversed from Delivery (Audit Recheck)',
+        statusColor: '#4edea3',
+        estimateValue: targetArchived.contractValue,
+        completionPace: 98,
+        targetDue: 'Reopened Submittal',
+        daysRemaining: 1,
+        budgetedHours: 160,
+        priority: 'HIGH',
+        paceStatus: 'Restored from Delivered',
+        paceStatusType: 'info',
+        milestones: [
+          { id: 'm1', title: 'QTO Package Reopened', status: 'complete' },
+          { id: 'm2', title: 'Contractor Delivery Hold', status: 'in_progress' },
+        ],
+        leadEstimators: [
+          { name: 'Marcus Vance', initials: 'MV' },
+          { name: 'David Chen', initials: 'DC' },
+        ],
+        leadRole: 'Lead Estimator',
+        actionType: 'release',
+        actionLabel: 'Release Package',
+        totalHoursLogged: 155,
+      };
+    }
+
+    setProjects((prev) => [restoredProject, ...prev]);
+    setArchived((prev) => prev.filter((a) => a.id !== archivedId));
+    showToast(`Delivery reversed! "${targetArchived.packageName}" is back in In-Flight projects.`);
+  };
+
+  const handlePreviewArchivedDelivery = (item: ArchivedDeliverableItem) => {
+    setDeliveryPreviewArchived(item);
+    setDeliveryPreviewProject(item.originalProject || null);
+    setIsDeliveryPreviewDelivered(true);
   };
 
   const handleConfirmEscalation = (projectId: string, memo: string) => {
@@ -1201,11 +1274,12 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
                       </button>
                     ) : project.actionType === 'release' ? (
                       <button
-                        onClick={() => handleReleasePackage(project.id)}
+                        onClick={() => handlePromptDeliveryPreview(project)}
+                        title="Review package deliverables before delivering"
                         className="px-3.5 py-1.5 bg-[#4edea3] hover:bg-[#40cf95] active:scale-[0.98] text-[#003824] rounded text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                       >
-                        <span>Release Package</span>
-                        <Send className="w-3.5 h-3.5" />
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Review & Release</span>
                       </button>
                     ) : (
                       <button
@@ -1370,12 +1444,24 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
                         <div className="text-[10px] text-[#86948a] font-mono">{p.leadRole}</div>
                       </td>
                       <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => setInspectingProject(p)}
-                          className="px-2.5 py-1 bg-[#0b1326] hover:bg-[#222a3d] border border-[#222a3d] text-white rounded text-xs cursor-pointer"
-                        >
-                          Inspect
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {p.actionType === 'release' && (
+                            <button
+                              onClick={() => handlePromptDeliveryPreview(p)}
+                              title="Review & deliver package"
+                              className="px-2 py-1 bg-[#4edea3]/20 hover:bg-[#4edea3]/30 border border-[#4edea3]/40 text-[#4edea3] rounded text-xs font-semibold cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>Release</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setInspectingProject(p)}
+                            className="px-2.5 py-1 bg-[#0b1326] hover:bg-[#222a3d] border border-[#222a3d] text-white rounded text-xs cursor-pointer"
+                          >
+                            Inspect
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1438,7 +1524,7 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
                 <th className="py-2.5 px-4 font-semibold">Delivered Date</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Contract Value</th>
                 <th className="py-2.5 px-4 font-semibold">Audit Verification</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Package Download</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Actions & Download</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#222a3d]">
@@ -1492,15 +1578,35 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
                     </div>
                   </td>
 
-                  {/* Download Action */}
+                  {/* Delivery Actions & Download */}
                   <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => handleDownloadZip(arch)}
-                      className="h-8 px-3 bg-[#0b1326] hover:bg-[#222a3d] border border-[#222a3d] text-white rounded font-mono text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer group"
-                    >
-                      <Download className="w-3.5 h-3.5 text-[#4edea3] group-hover:translate-y-0.5 transition-transform" />
-                      <span>{arch.fileSize}</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => handlePreviewArchivedDelivery(arch)}
+                        title="View deliverable manifest details"
+                        className="h-8 px-2.5 bg-[#0b1326] hover:bg-[#222a3d] border border-[#222a3d] hover:border-[#adc6ff]/50 text-[#adc6ff] rounded font-mono text-[10px] uppercase tracking-wider inline-flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>View</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleReverseDelivery(arch.id)}
+                        title="Revert back to in-flight active projects"
+                        className="h-8 px-2.5 bg-[#e0b44a]/10 hover:bg-[#e0b44a]/25 border border-[#e0b44a]/30 hover:border-[#e0b44a]/60 text-[#ffd18a] rounded font-mono text-[10px] uppercase tracking-wider inline-flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reverse</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDownloadZip(arch)}
+                        className="h-8 px-3 bg-[#0b1326] hover:bg-[#222a3d] border border-[#222a3d] text-white rounded font-mono text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer group"
+                      >
+                        <Download className="w-3.5 h-3.5 text-[#4edea3] group-hover:translate-y-0.5 transition-transform" />
+                        <span>{arch.fileSize}</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1518,10 +1624,25 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
         onUpdateMilestone={handleUpdateMilestone}
         onExtendDeadline={handleExtendDeadline}
         onRelease={handleReleasePackage}
+        onRequestRelease={(p) => handlePromptDeliveryPreview(p)}
         onEscalate={(id) => {
           const p = projects.find((x) => x.id === id);
           if (p) setEscalateProject(p);
         }}
+      />
+
+      {/* 2. Delivery Verification, Preview & Reversal Modal */}
+      <DeliveryPreviewModal
+        isOpen={!!deliveryPreviewProject || !!deliveryPreviewArchived}
+        project={deliveryPreviewProject}
+        archivedItem={deliveryPreviewArchived}
+        isDelivered={isDeliveryPreviewDelivered}
+        onClose={() => {
+          setDeliveryPreviewProject(null);
+          setDeliveryPreviewArchived(null);
+        }}
+        onConfirmDelivery={handleReleasePackage}
+        onReverseDelivery={handleReverseDelivery}
       />
 
       {/* 2. New Takeoff Package Modal */}

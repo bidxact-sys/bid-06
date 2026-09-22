@@ -23,6 +23,7 @@ interface ProjectInspectModalProps {
   onClose: () => void;
   onUpdateMilestone?: (projectId: string, milestoneId: string, status: MilestoneItem['status']) => void;
   onRelease?: (projectId: string) => void;
+  onRequestRelease?: (project: ProjectTrackItem) => void;
   onEscalate?: (projectId: string) => void;
   onExtendDeadline?: (projectId: string, extraDays: number) => void;
 }
@@ -33,6 +34,7 @@ export const ProjectInspectModal: React.FC<ProjectInspectModalProps> = ({
   onClose,
   onUpdateMilestone,
   onRelease,
+  onRequestRelease,
   onEscalate,
   onExtendDeadline,
 }) => {
@@ -456,16 +458,20 @@ export const ProjectInspectModal: React.FC<ProjectInspectModalProps> = ({
               </button>
             )}
 
-            {project.actionType === 'release' && onRelease && (
+            {project.actionType === 'release' && (onRelease || onRequestRelease) && (
               <button
                 onClick={() => {
-                  onRelease(project.id);
+                  if (onRequestRelease) {
+                    onRequestRelease(project);
+                  } else if (onRelease) {
+                    onRelease(project.id);
+                  }
                   onClose();
                 }}
                 className="px-4 py-2 rounded-md bg-[#4edea3] hover:bg-[#40cf95] text-[#003824] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Release Package to Contractor</span>
+                <span>Review & Release Package</span>
               </button>
             )}
           </div>

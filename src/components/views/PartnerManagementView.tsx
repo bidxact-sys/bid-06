@@ -15,15 +15,20 @@ import {
   ArrowUpRight,
   X,
   FileCheck2,
-  Share2
+  Share2,
+  Landmark,
+  ExternalLink,
 } from 'lucide-react';
-import { PartnerItem, PartnerPayoutRecord, CashTransaction } from '../../types';
+import { PartnerItem, PartnerPayoutRecord, CashTransaction, ConnectedBankAccount, BankTransferRequest } from '../../types';
 
 interface PartnerManagementViewProps {
   partners: PartnerItem[];
   payouts: PartnerPayoutRecord[];
   onExecutePayout: (payout: PartnerPayoutRecord, updatedPartner: PartnerItem, outflowTxn: CashTransaction) => void;
   onUpdatePartner: (partner: PartnerItem) => void;
+  connectedAccounts?: ConnectedBankAccount[];
+  transferRequests?: BankTransferRequest[];
+  onNavigateTab?: (tab: any) => void;
 }
 
 export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
@@ -31,6 +36,9 @@ export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
   payouts,
   onExecutePayout,
   onUpdatePartner,
+  connectedAccounts = [],
+  transferRequests = [],
+  onNavigateTab,
 }) => {
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>(partners[0]?.id || '');
@@ -128,6 +136,21 @@ export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('connected-banks')}
+              className="h-9 px-3.5 bg-[#171f33] hover:bg-[#222a3d] border border-[#4edea3]/30 rounded-md text-xs font-mono text-[#4edea3] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Landmark className="w-3.5 h-3.5 text-[#4edea3]" />
+              <span>Wise, Payoneer &amp; Mercury</span>
+              {transferRequests.filter((r) => r.status === 'pending_partner_approval').length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 bg-[#ffb4ab]/20 text-[#ffb4ab] rounded font-bold text-[10px]">
+                  {transferRequests.filter((r) => r.status === 'pending_partner_approval').length} SIGN-OFFS
+                </span>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => {
               const partner = partners[0];
@@ -195,6 +218,51 @@ export const PartnerManagementView: React.FC<PartnerManagementViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Institutional Bank Balances & Partner Approval Banner */}
+      {connectedAccounts.length > 0 && (
+        <div className="bg-[#131b2e] border border-[#222a3d] rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222a3d]">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-[#4edea3]" />
+              <h3 className="text-sm font-bold text-white">
+                Institutional Bank Liquidity &amp; Approval Governance
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#4edea3]/15 text-[#4edea3] font-semibold border border-[#4edea3]/30">
+                WISE • PAYONEER • MERCURY
+              </span>
+            </div>
+            {onNavigateTab && (
+              <button
+                onClick={() => onNavigateTab('connected-banks')}
+                className="text-xs font-mono text-[#4edea3] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Open Approval Hub &amp; Configure Limits</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            {connectedAccounts.map((acc) => (
+              <div key={acc.id} className="p-3 bg-[#0b1326] border border-[#222a3d] rounded-md">
+                <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                  <span className="uppercase font-bold text-[#bbcabf]">{acc.provider}</span>
+                  <span className="text-[#4edea3]">Live Feed</span>
+                </div>
+                <div className="text-xs text-white truncate font-medium">{acc.accountName}</div>
+                <div className="text-base font-bold font-mono text-white mt-1">
+                  ${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="text-[10px] font-mono text-[#86948a] mt-1 pt-1 border-t border-[#1e293b] flex items-center justify-between">
+                  <span>Auto-Clear: ≤ ${acc.autoApprovalLimit.toLocaleString()}</span>
+                  <span className="text-[#ffb4ab]">Sign-Off: &gt; ${acc.autoApprovalLimit.toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Partners Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

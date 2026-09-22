@@ -16,19 +16,24 @@ import {
   CreditCard,
   ShieldCheck,
   Zap,
+  Landmark,
+  Sliders,
+  ExternalLink,
 } from 'lucide-react';
-import { CashTransaction } from '../../types';
+import { CashTransaction, ConnectedBankAccount } from '../../types';
 
 interface InflowOutflowViewProps {
   transactions: CashTransaction[];
   onAddTransaction: (txn: CashTransaction) => void;
   onNavigateTab: (tab: any) => void;
+  connectedAccounts?: ConnectedBankAccount[];
 }
 
 export const InflowOutflowView: React.FC<InflowOutflowViewProps> = ({
   transactions,
   onAddTransaction,
   onNavigateTab,
+  connectedAccounts = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'inflow' | 'outflow'>('all');
@@ -222,6 +227,52 @@ export const InflowOutflowView: React.FC<InflowOutflowViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Connected Fintech Accounts (Wise, Payoneer, Mercury) Live Balances Banner */}
+      {connectedAccounts.length > 0 && (
+        <div className="bg-[#131b2e] border border-[#222a3d] rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-[#222a3d]">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-[#4edea3]" />
+              <h3 className="text-sm font-bold text-white">
+                Connected Institutional Accounts (Wise, Payoneer &amp; Mercury)
+              </h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#4edea3]/15 text-[#4edea3] font-semibold border border-[#4edea3]/30">
+                LIVE BALANCES
+              </span>
+            </div>
+            <button
+              onClick={() => onNavigateTab('connected-banks')}
+              className="text-xs font-mono text-[#4edea3] hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            >
+              <span>Manage Approvals &amp; Transfer Limits</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {connectedAccounts.map((acc) => (
+              <div
+                key={acc.id}
+                className="bg-[#0b1326] border border-[#222a3d] hover:border-[#4edea3]/40 rounded-md p-3 transition-colors"
+              >
+                <div className="flex items-center justify-between text-[11px] font-mono mb-1">
+                  <span className="uppercase font-bold text-[#bbcabf]">{acc.provider}</span>
+                  <span className="text-[#4edea3] font-semibold">Active Feed</span>
+                </div>
+                <div className="text-xs font-medium text-white truncate">{acc.accountName}</div>
+                <div className="text-lg font-bold font-mono text-white mt-1">
+                  ${acc.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono text-[#86948a] mt-1 pt-1 border-t border-[#1b253b]">
+                  <span>Avail: ${acc.availableBalance.toLocaleString()}</span>
+                  <span>Limit: ≤ ${acc.autoApprovalLimit.toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Breakdown Panels (Inflow Sources vs Outflow Categories) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

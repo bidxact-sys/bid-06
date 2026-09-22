@@ -571,6 +571,7 @@ export interface ArchivedDeliverableItem {
     signers: string;
   };
   fileSize: string;
+  originalProject?: ProjectTrackItem;
 }
 
 // ==========================================
@@ -622,5 +623,70 @@ export interface CompanyReminderItem {
   actionUrlOrTab?: string;
   actionLabel?: string;
   tags: string[];
+}
+
+// ==========================================
+// CONNECTED BANK ACCOUNTS & PARTNER APPROVAL TYPES
+// ==========================================
+
+export type ConnectedBankProvider = 'wise' | 'payoneer' | 'mercury';
+
+export interface ConnectedBankAccount {
+  id: string;
+  provider: ConnectedBankProvider;
+  accountName: string;
+  accountNumberMask: string;
+  routingOrBicMask: string;
+  currency: string;
+  balance: number;
+  availableBalance: number;
+  pendingHold: number;
+  lastSyncedAt: string;
+  status: 'connected' | 'disconnected' | 'syncing' | 'error';
+  autoApprovalLimit: number; // e.g. $5,000 threshold below which transactions auto-clear
+  dualSignOffThreshold: number; // e.g. $25,000 for mandatory dual-partner signoff
+  requiredPartnerApprovals: number; // 1 or 2 partners
+  designatedApprovers: string[]; // Partner IDs, e.g. ['PARTNER-01', 'PARTNER-02']
+  notes?: string;
+}
+
+export type BankTransactionType = 'transfer_out' | 'payroll_disbursement' | 'vendor_bill' | 'partner_draw' | 'fx_conversion' | 'deposit';
+
+export type BankTransactionApprovalStatus =
+  | 'auto_approved' // Below limit, cleared automatically
+  | 'pending_partner_approval' // Big transaction, requires partner approval
+  | 'approved' // Partner approved, ready to execute
+  | 'rejected' // Partner rejected
+  | 'executed'; // Disbursed/settled
+
+export interface PartnerApprovalAction {
+  partnerId: string;
+  partnerName: string;
+  action: 'approved' | 'rejected';
+  timestamp: string;
+  notes?: string;
+  ipAddress?: string;
+}
+
+export interface BankTransferRequest {
+  id: string;
+  accountId: string;
+  provider: ConnectedBankProvider;
+  accountName: string;
+  recipientName: string;
+  recipientDetails: string;
+  amount: number;
+  currency: string;
+  transactionType: BankTransactionType;
+  purpose: string;
+  requestedBy: string;
+  createdAt: string;
+  status: BankTransactionApprovalStatus;
+  thresholdApplied: number;
+  requiresPartnerApproval: boolean;
+  approvalPolicy: 'below_threshold_auto' | 'standard_partner_signoff' | 'dual_partner_super_majority';
+  approvals: PartnerApprovalAction[];
+  executionTxnId?: string;
+  executedAt?: string;
 }
 

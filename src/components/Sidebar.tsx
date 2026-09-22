@@ -36,6 +36,7 @@ export type NavTabId =
   | 'client-portal'
   | 'inflow-outflow'
   | 'finance'
+  | 'connected-banks'
   | 'projects'
   | 'hr-directory'
   | 'payroll'
@@ -412,6 +413,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
+              id="nav-connected-banks"
+              onClick={() => handleNav('connected-banks')}
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === 'connected-banks'
+                  ? 'bg-[#171f33] text-white font-medium border-l-2 border-[#4edea3]'
+                  : 'text-[#bbcabf] hover:bg-[#131b2e] hover:text-[#dae2fd]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Landmark className={`w-3.5 h-3.5 ${activeTab === 'connected-banks' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} />
+                <span>Wise, Payoneer &amp; Mercury</span>
+              </div>
+              <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#4edea3]/20 text-[#4edea3] rounded font-bold border border-[#4edea3]/30">
+                LIVE
+              </span>
+            </button>
+
+            <button
               id="nav-emergency-fund"
               onClick={() => handleNav('emergency-fund')}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
@@ -600,7 +619,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className={`w-3.5 h-3.5 ${activeTab === 'audit' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} />
-                <span>Audit Trail & Settings</span>
+                <span>Audit Trail &amp; API Keys</span>
               </div>
             </button>
           </div>

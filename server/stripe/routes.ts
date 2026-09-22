@@ -4,6 +4,14 @@ import { stripe, stripeIsConfigured } from './client'
 
 export const stripeRoutes = express.Router()
 
+stripeRoutes.get('/status', (_req, res) => {
+  res.json({
+    configured: stripeIsConfigured(),
+    hasWebhookSecret: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+    environment: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live') ? 'live' : 'test',
+  })
+})
+
 stripeRoutes.post('/checkout', express.json(), async (req, res) => {
   if (!stripeIsConfigured()) return res.status(503).json({ error: 'Stripe is not configured' })
 

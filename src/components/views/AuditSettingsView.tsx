@@ -8,8 +8,12 @@ import {
   Download,
   CheckCircle2,
   Clock,
-  Terminal
+  Terminal,
+  KeyRound,
+  Sliders,
+  Layers,
 } from 'lucide-react';
+import { SecretKeysIntegrationsPanel } from '../integrations/SecretKeysIntegrationsPanel';
 
 interface AuditLogEntry {
   id: string;
@@ -91,10 +95,10 @@ export const AuditSettingsView: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] ml-1" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Audit Trail & ISO 9001 Compliance
+            Audit Trail, Security &amp; API Keys Settings
           </h1>
           <p className="text-xs sm:text-sm text-[#86948a] mt-0.5">
-            Immutable system logs, estimate version history, and SOC-2 access security tracking
+            Zero-code payment gateway credentials, immutable system logs, estimate version history, and SOC-2 access security tracking
           </p>
         </div>
 
@@ -157,6 +161,9 @@ export const AuditSettingsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Secret Keys & Integrations Panel (Zero-Code Management) */}
+      <SecretKeysIntegrationsPanel />
 
       {/* Log Feed Table */}
       <div className="bg-[#131b2e] border border-[#222a3d] rounded-lg overflow-hidden">
