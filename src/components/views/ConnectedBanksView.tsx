@@ -42,6 +42,7 @@ interface ConnectedBanksViewProps {
   onUpdateAccountLimits: (accountId: string, newAutoLimit: number, newDualSignOffLimit: number) => void;
   onUpdateAccount?: (updatedAccount: ConnectedBankAccount) => void;
   onAddAccount?: (newAccount: ConnectedBankAccount) => void;
+  onRemoveAccount?: (accountId: string) => void;
   onCreateTransferRequest: (request: BankTransferRequest) => void;
   onPartnerApprovalAction: (requestId: string, partnerId: string, partnerName: string, action: 'approved' | 'rejected', notes?: string) => void;
   onExecuteApprovedTransfer: (requestId: string) => void;
@@ -56,6 +57,7 @@ export const ConnectedBanksView: React.FC<ConnectedBanksViewProps> = ({
   onUpdateAccountLimits,
   onUpdateAccount,
   onAddAccount,
+  onRemoveAccount,
   onCreateTransferRequest,
   onPartnerApprovalAction,
   onExecuteApprovedTransfer,
