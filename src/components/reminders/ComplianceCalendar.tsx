@@ -74,11 +74,6 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   const dayNamesShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  const quarterNumber = Math.floor(currentMonth / 3) + 1;
-  const quarterStartMonth = quarterNumber * 3 - 2;
-  const quarterEndMonth = quarterNumber * 3;
-  const quarterLabel = `Q${quarterNumber} ${currentYear}`;
-  const quarterRange = `${monthNames[quarterStartMonth - 1].slice(0, 3)}–${monthNames[quarterEndMonth - 1].slice(0, 3)} ${currentYear}`;
 
   // Month navigation handlers
   const handlePrevMonth = () => {
@@ -393,18 +388,12 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-[#86948a] mb-1">
-              <span className="text-[#4edea3] font-bold">COMPLIANCE TIMELINE</span>
-              <span>/</span>
-              <span className="text-white font-semibold">{monthNames[currentMonth]} {currentYear}</span>
-              <span className="rounded-full border border-[#4edea3]/30 bg-[#4edea3]/10 px-2 py-0.5 text-[9px] font-bold tracking-wide text-[#6ee7b7]">{quarterLabel}</span>
-            </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <CalendarDays className="w-6 h-6 text-[#4edea3]" />
               <span>Executive Compliance Calendar</span>
             </h2>
             <p className="text-xs text-[#86948a] mt-0.5 max-w-2xl">
-              {quarterRange} planning horizon · statutory filings, client calls, tender deadlines, and banking cutoffs in one view.
+              Statutory filings, client calls, tender deadlines, and banking cutoffs in one view.
             </p>
           </div>
 
