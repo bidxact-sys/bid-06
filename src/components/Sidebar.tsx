@@ -52,7 +52,8 @@ export type NavTabId =
   | 'messages'
   | 'documents'
   | 'cap-table'
-  | 'audit';
+  | 'audit'
+  | 'employee-portal';
 
 interface SidebarProps {
   activeTab: NavTabId;
@@ -281,6 +282,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="font-mono text-[10px] px-1.5 py-0.5 bg-[#2d3449] text-[#dae2fd] rounded">
                 14
               </span>
+            </button>
+            <button
+              id="nav-employee-portal"
+              onClick={() => handleNav('employee-portal')}
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                activeTab === 'employee-portal'
+                  ? 'bg-[#171f33] text-white font-medium border-l-2 border-[#4edea3]'
+                  : 'text-[#bbcabf] hover:bg-[#131b2e] hover:text-[#dae2fd]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5"><UserCheck className={`w-3.5 h-3.5 ${activeTab === 'employee-portal' ? 'text-[#4edea3]' : 'text-[#86948a]'}`} /><span>Employee Portal</span></div>
+              <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#4edea3]/15 text-[#4edea3] rounded font-bold">NEW</span>
             </button>
 
             <button

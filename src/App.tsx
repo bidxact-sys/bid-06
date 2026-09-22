@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Wallet } from 'lucide-react';
 import {
   INITIAL_METRICS,
@@ -16,6 +16,7 @@ import { EnterpriseClientsGrid } from './components/EnterpriseClientsGrid';
 import { AccuracyGuaranteeStrip } from './components/AccuracyGuaranteeStrip';
 import { PersonalFinanceHub } from './components/finance/PersonalFinanceHub';
 import { ProjectTrackingOperations } from './components/ProjectTrackingOperations';
+import type { OutsourcedProjectAssignment } from './components/OutsourcedProjectModal';
 import { WorkflowAutomationHub } from './components/workflow/WorkflowAutomationHub';
 
 // Dedicated Module Views
@@ -41,6 +42,7 @@ import { AuditSettingsView } from './components/views/AuditSettingsView';
 import { CompanyDetailView } from './components/views/CompanyDetailView';
 import { ClientPortalView } from './components/views/ClientPortalView';
 import { CompanyRemindersView } from './components/views/CompanyRemindersView';
+import { EmployeePortalView } from './components/views/EmployeePortalView';
 
 // Enterprise ERP Initial System Data
 import {
@@ -92,7 +94,6 @@ export default function App() {
 
   // State
   const [activeTab, setActiveTab] = useState<NavTabId>('workflow-automation');
-  const [selectedPeriod, setSelectedPeriod] = useState('Q3 2024 (Active Period)');
   const [metrics, setMetrics] = useState<MetricSummary>(INITIAL_METRICS);
   const [rfis, setRfis] = useState<RfiItem[]>(INITIAL_RFIS);
   const [bids, setBids] = useState<BidItem[]>(INITIAL_BIDS);
@@ -103,6 +104,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<CashTransaction[]>(INITIAL_CASH_TRANSACTIONS);
   const [employees, setEmployees] = useState<EmployeeItem[]>(INITIAL_EMPLOYEES);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRunItem[]>(INITIAL_PAYROLL_RUNS);
+  const [outsourcedAssignments, setOutsourcedAssignments] = useState<OutsourcedProjectAssignment[]>([]);
   const [loans, setLoans] = useState<LoanItem[]>(INITIAL_LOANS);
   const [loanPayments, setLoanPayments] = useState<LoanPaymentRecord[]>(INITIAL_LOAN_PAYMENTS);
   const [partners, setPartners] = useState<PartnerItem[]>(INITIAL_PARTNERS);
@@ -294,8 +296,8 @@ export default function App() {
   };
 
   const handleRunPayroll = (newRun: PayrollRunItem, outflowTxn: CashTransaction) => {
-    setPayrollRuns((prev) => [newRun, ...prev]);
-    setTransactions((prev) => [outflowTxn, ...prev]);
+  setPayrollRuns((prev) => prev.some((run) => run.id === newRun.id || (run.period === newRun.period && run.payDate === newRun.payDate)) ? prev : [newRun, ...prev]);
+  setTransactions((prev) => prev.some((transaction) => transaction.id === outflowTxn.id || transaction.referenceNumber === outflowTxn.referenceNumber) ? prev : [outflowTxn, ...prev]);
   };
 
   const handleRecordLoanPayment = (
@@ -371,15 +373,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3]">
+    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
       {/* Top Application Bar */}
       <TopNav
-        onOpenNewRfi={() => setIsNewRfiOpen(true)}
-        onOpenNewBid={() => setIsNewBidOpen(true)}
-        onOpenNewClient={() => setIsNewClientOpen(true)}
+
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        selectedPeriod={selectedPeriod}
-        onSelectPeriod={setSelectedPeriod}
+
         notificationCount={notificationCount}
         onToggleMobileMenu={() => setIsMobileSidebarOpen((prev) => !prev)}
         onNavigateToReminders={() => handleSelectTab('company-reminders')}
@@ -387,7 +386,7 @@ export default function App() {
       />
 
       {/* Main Body Layout (Sidebar + Content Workspace) */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Left Nav Sidebar */}
         <Sidebar
           activeTab={activeTab}
@@ -405,7 +404,7 @@ export default function App() {
         {/* Scrollable Main Operations Surface */}
         <main
           id="main-content-scroll"
-          className="flex-1 overflow-y-auto bg-[#0b1326] p-3 sm:p-6 space-y-4 sm:space-y-6"
+          className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#0b1326] p-3 sm:p-6 space-y-4 sm:space-y-6"
         >
           {selectedClient ? (
             /* ISOLATED COMPANY INTERFACE: When user clicks any company name, only this company's details appear */
@@ -427,6 +426,8 @@ export default function App() {
               onNavigateTab={handleSelectTab}
               onRecordCashOutflow={handleCreateTransaction}
             />
+          ) : activeTab === 'employee-portal' ? (
+            <EmployeePortalView />
           ) : activeTab === 'workflow-automation' ? (
             <WorkflowAutomationHub />
           ) : activeTab === 'client-portal' ? (
@@ -455,10 +456,13 @@ export default function App() {
             <ProjectTrackingOperations
               onOpenNewTakeoff={() => setIsNewBidOpen(true)}
               onNavigateTab={handleSelectTab}
+              onOutsourcedAssignment={(assignment) => setOutsourcedAssignments((current) => current.some((item) => item.id === assignment.id) ? current : [assignment, ...current])}
             />
           ) : activeTab === 'finance' ? (
-            <CompanyFinanceGlView
-              onSwitchToPersonalFinance={() => {
+  <CompanyFinanceGlView
+  outsourcedAssignments={outsourcedAssignments}
+  payrollRuns={payrollRuns}
+  onSwitchToPersonalFinance={() => {
                 setActiveWorkspace('personal-finance');
                 localStorage.setItem('bid_exact_active_workspace', 'personal-finance');
               }}

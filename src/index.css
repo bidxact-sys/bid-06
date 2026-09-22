@@ -11,6 +11,12 @@
     font-family: var(--font-body);
     background-color: #0b1326;
     color: #dae2fd;
+    overscroll-behavior-y: none;
+  }
+
+  html.dark body {
+    background-color: #0b1326;
+    color: #dae2fd;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -21,6 +27,43 @@
   .tabular-nums {
     font-family: var(--font-mono);
     font-feature-settings: "tnum" 1, "zero" 1;
+  }
+}
+
+/* Responsive safety rails for dense enterprise views and data tables. */
+html, body, #root {
+  min-height: 100%;
+}
+
+img, svg, canvas, video {
+  max-width: 100%;
+}
+
+button, input, select, textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .theme-surface {
+    overflow-x: hidden;
+  }
+
+  .theme-surface table {
+    min-width: 640px;
+  }
+
+  .theme-surface [class*="min-w-["] {
+    min-width: min(100%, 100vw - 2rem) !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .theme-surface table {
+    min-width: 720px;
   }
 }
 

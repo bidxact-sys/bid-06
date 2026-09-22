@@ -46,10 +46,12 @@ import { NewTakeoffPackageModal } from './NewTakeoffPackageModal';
 import { EscalateRfiModal } from './EscalateRfiModal';
 import { ResourceCapacityPlanningModule } from './ResourceCapacityPlanningModule';
 import { NavTabId } from './Sidebar';
+import { OutsourcedProjectModal, type OutsourcedProjectAssignment } from './OutsourcedProjectModal';
 
 interface ProjectTrackingOperationsProps {
   onOpenNewTakeoff?: () => void;
   onNavigateTab?: (tabId: NavTabId) => void;
+  onOutsourcedAssignment?: (assignment: OutsourcedProjectAssignment) => void;
 }
 
 // Utility helper to compute deadline urgency badge, colors, and countdown
@@ -136,7 +138,8 @@ export const getDeadlineBadge = (project: ProjectTrackItem) => {
 export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps> = ({
   onOpenNewTakeoff,
   onNavigateTab,
-}) => {
+  onOutsourcedAssignment,
+  }) => {
   // State
   const [projects, setProjects] = useState<ProjectTrackItem[]>(INITIAL_PROJECT_TRACKS);
   const [estimators, setEstimators] = useState<EstimatorWorkloadItem[]>(INITIAL_ESTIMATOR_WORKLOAD);
@@ -153,6 +156,8 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
   // Modals & Drawers
   const [inspectingProject, setInspectingProject] = useState<ProjectTrackItem | null>(null);
   const [isNewPackageModalOpen, setIsNewPackageModalOpen] = useState(false);
+  const [isOutsourcedModalOpen, setIsOutsourcedModalOpen] = useState(false);
+  const [outsourcedAssignments, setOutsourcedAssignments] = useState<OutsourcedProjectAssignment[]>([]);
   const [escalateProject, setEscalateProject] = useState<ProjectTrackItem | null>(null);
 
   // Toast / Feedback State
@@ -245,6 +250,12 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
   const handleCreatePackage = (newProject: ProjectTrackItem) => {
     setProjects((prev) => [newProject, ...prev]);
     showToast(`Takeoff Package ${newProject.id} (${newProject.title}) successfully created!`);
+  };
+
+  const handleCreateOutsourcedAssignment = (assignment: OutsourcedProjectAssignment) => {
+    setOutsourcedAssignments((current) => [assignment, ...current]);
+    onOutsourcedAssignment?.(assignment);
+    showToast(`${assignment.provider} assigned to ${assignment.project}. Approval workflow started.`);
   };
 
   const handleExtendDeadline = (projectId: string, extraDays: number) => {
@@ -503,8 +514,12 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
             className="h-10 px-4 bg-[#4edea3] hover:bg-[#40cf95] active:scale-[0.98] text-[#003824] rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ New Takeoff Package</span>
-          </button>
+  <span>+ New Takeoff Package</span>
+  </button>
+  <button onClick={() => setIsOutsourcedModalOpen(true)} className="h-10 px-4 border border-[#ffb356]/50 bg-[#ffb356]/10 hover:bg-[#ffb356]/20 text-[#ffd18a] rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer">
+  <Users className="w-4 h-4" />
+  <span>Outsource Project</span>
+  </button>
         </div>
       </div>
 
@@ -798,6 +813,11 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
           </div>
         </div>
       </div>
+
+      {outsourcedAssignments.length > 0 && <div className="mb-5 rounded-lg border border-[#ffb356]/30 bg-[#171f33] p-4">
+        <div className="mb-3 flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#ffb356]">External delivery assignments</p><h3 className="mt-1 text-sm font-semibold text-[#f3f5ff]">Projects supported by outsourced teams</h3></div><span className="rounded-full bg-[#ffb356]/15 px-2 py-1 font-mono text-[10px] text-[#ffd18a]">{outsourcedAssignments.length} active</span></div>
+        <div className="grid gap-3 lg:grid-cols-2">{outsourcedAssignments.map((assignment) => <div key={assignment.id} className="rounded-md border border-[#29334a] bg-[#10182a] p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-[#eef2ff]">{assignment.project}</p><p className="mt-1 text-xs text-[#9da9c5]">{assignment.provider} · {assignment.paymentModel}</p></div><span className="rounded border border-[#ffb356]/30 px-2 py-1 text-[10px] text-[#ffd18a]">{assignment.status}</span></div><p className="mt-3 line-clamp-2 text-xs text-[#b5c0d8]">{assignment.scope}</p><div className="mt-3 flex justify-between font-mono text-[10px] text-[#7785a5]"><span>{assignment.startDate} → {assignment.dueDate}</span><span className="text-[#4edea3]">${assignment.budget.toLocaleString()}</span></div></div>)}</div>
+      </div>}
 
       {/* Active Projects Bento / Grid / Capacity Planning Display */}
       {viewMode === 'capacity' ? (
@@ -1511,7 +1531,14 @@ export const ProjectTrackingOperations: React.FC<ProjectTrackingOperationsProps>
         onCreate={handleCreatePackage}
       />
 
-      {/* 3. Escalate RFI Modal */}
+      <OutsourcedProjectModal
+    isOpen={isOutsourcedModalOpen}
+    projects={projects.map((project) => project.title)}
+    onClose={() => setIsOutsourcedModalOpen(false)}
+    onCreate={handleCreateOutsourcedAssignment}
+  />
+
+  {/* 3. Escalate RFI Modal */}
       <EscalateRfiModal
         isOpen={!!escalateProject}
         onClose={() => setEscalateProject(null)}

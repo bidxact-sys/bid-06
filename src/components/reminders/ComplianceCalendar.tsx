@@ -388,19 +388,12 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-[#86948a] mb-1">
-              <span className="text-[#4edea3] font-bold">COMPLIANCE TIMELINE VISUALIZER</span>
-              <span>/</span>
-              <span className="text-white font-semibold">{monthNames[currentMonth]} {currentYear}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
-            </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               <CalendarDays className="w-6 h-6 text-[#4edea3]" />
-              Executive Compliance & Reminder Calendar
+              <span>Executive Compliance Calendar</span>
             </h2>
             <p className="text-xs text-[#86948a] mt-0.5 max-w-2xl">
-              Aggregated view of statutory tax deposits, general contractor client relationship calls, sealed tender deadlines,
-              and banking cutoffs mapped against regulatory due dates.
+              Statutory filings, client calls, tender deadlines, and banking cutoffs in one view.
             </p>
           </div>
 
@@ -414,7 +407,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Sep 2024 (Q3 Taxes)
+              Sep 2024 · Taxes
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 9)}
@@ -424,7 +417,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Oct 2024 (Franchise)
+              Oct 2024 · Franchise
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 10)}
@@ -434,7 +427,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Nov 2024 (1099 Prep)
+              Nov 2024 · 1099 prep
             </button>
             <button
               onClick={() => handleJumpToMonth(2024, 11)}
@@ -444,7 +437,7 @@ export const ComplianceCalendar: React.FC<ComplianceCalendarProps> = ({
                   : 'bg-[#0b1326] text-[#dae2fd] border-[#222a3d] hover:border-[#4edea3]/40'
               }`}
             >
-              Dec 2024 (Year-End)
+              Dec 2024 · Year-end
             </button>
           </div>
         </div>

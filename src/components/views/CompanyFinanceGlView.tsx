@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { CompanyDataImportPanel } from './CompanyDataImportPanel';
+import { AddCompanyExpenseModal, type CompanyExpense } from './AddCompanyExpenseModal';
+import type { PayrollRunItem } from '../../types';
+import type { OutsourcedProjectAssignment } from '../OutsourcedProjectModal';
 import {
   Landmark,
   ArrowUpRight,
@@ -11,11 +15,14 @@ import {
   Plus,
   Search,
   Filter,
-  Wallet
+  Wallet,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface CompanyFinanceGlViewProps {
   onSwitchToPersonalFinance: () => void;
+  payrollRuns: PayrollRunItem[];
+  outsourcedAssignments: OutsourcedProjectAssignment[];
 }
 
 interface GlTransaction {
@@ -26,6 +33,7 @@ interface GlTransaction {
   account: string;
   type: 'credit' | 'debit';
   amount: number;
+  currency: string;
   status: 'Reconciled' | 'Pending';
 }
 
@@ -38,6 +46,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 142000,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -48,6 +57,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 88500,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -58,6 +68,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Payroll Reserve ••2041',
     type: 'debit',
     amount: 64250,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -68,6 +79,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Corporate Amex ••4102',
     type: 'debit',
     amount: 14500,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -78,6 +90,7 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'credit',
     amount: 62000,
+    currency: 'USD',
     status: 'Reconciled',
   },
   {
@@ -88,17 +101,49 @@ const INITIAL_TRANSACTIONS: GlTransaction[] = [
     account: 'Operating Checking ••8491',
     type: 'debit',
     amount: 11200,
+    currency: 'USD',
     status: 'Pending',
   },
 ];
 
 export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   onSwitchToPersonalFinance,
+  payrollRuns,
+  outsourcedAssignments,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'credit' | 'debit'>('all');
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
 
-  const filteredTransactions = INITIAL_TRANSACTIONS.filter((t) => {
+  const payrollExpenses = payrollRuns.map((run): GlTransaction => ({
+    id: `PAYROLL-EXP-${run.id}`,
+    date: run.payDate,
+    description: `Payroll batch ${run.period} (${run.employeeCount} employees)`,
+    category: 'Payroll Expense',
+    account: 'Payroll Reserve ••2041',
+    type: 'debit',
+    amount: run.totalGross + run.totalTaxesWithheld,
+    currency: 'USD',
+    status: run.status === 'Paid' ? 'Reconciled' : 'Pending',
+  }));
+
+  const outsourcedExpenses = outsourcedAssignments.map((assignment): GlTransaction => ({
+    id: `OUTSOURCE-EXP-${assignment.id}`,
+    date: assignment.startDate,
+    description: `${assignment.provider} - ${assignment.project}`,
+    category: 'Outsourced Project Services',
+    account: 'Operating Checking ••8491',
+    type: 'debit',
+    amount: assignment.budget,
+    currency: assignment.currency || 'USD',
+    status: assignment.status === 'Approved' ? 'Pending' : 'Pending',
+  }));
+
+  const ledgerTransactions = [...payrollExpenses, ...outsourcedExpenses, ...expenses.map((expense): GlTransaction => ({ id: expense.id, date: expense.date, description: `${expense.vendor} - ${expense.description}`, category: expense.category, account: expense.account, type: 'debit', amount: expense.amount, currency: expense.currency || 'PKR', status: expense.paymentStatus === 'Paid' ? 'Reconciled' : 'Pending' })), ...INITIAL_TRANSACTIONS];
+
+  const filteredTransactions = ledgerTransactions.filter((t) => {
     const matchesSearch =
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,6 +154,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
   });
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -128,6 +174,20 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="h-9 px-3.5 bg-[#4edea3] hover:bg-[#63edb5] text-[#06251a] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Import Company Data</span>
+          </button>
+          <button
+            onClick={() => setIsExpenseOpen(true)}
+            className="h-9 px-3.5 bg-[#ffb4ab] hover:bg-[#ffc8c0] text-[#321313] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Add Expense</span>
+          </button>
           <button
             onClick={onSwitchToPersonalFinance}
             className="h-9 px-3.5 bg-[#131b2e] hover:bg-[#171f33] border border-[#4edea3]/40 text-[#4edea3] rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
@@ -221,7 +281,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                   : 'text-[#86948a] hover:text-white'
               }`}
             >
-              All Entries ({INITIAL_TRANSACTIONS.length})
+              All Entries ({ledgerTransactions.length})
             </button>
             <button
               onClick={() => setSelectedFilter('credit')}
@@ -256,7 +316,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                 <th className="p-3">Description</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Account</th>
-                <th className="p-3 text-right">Amount</th>
+                <th className="p-3 text-right">Amount / Currency</th>
                 <th className="p-3 text-center">Status</th>
               </tr>
             </thead>
@@ -275,7 +335,7 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
                       tx.type === 'credit' ? 'text-[#4edea3]' : 'text-[#ffb4ab]'
                     }`}
                   >
-                    {tx.type === 'credit' ? '+' : '-'}${tx.amount.toLocaleString()}
+                    {tx.type === 'credit' ? '+' : '-'}{new Intl.NumberFormat(undefined, { style: 'currency', currency: tx.currency }).format(tx.amount)}
                   </td>
                   <td className="p-3 text-center">
                     <span
@@ -295,5 +355,8 @@ export const CompanyFinanceGlView: React.FC<CompanyFinanceGlViewProps> = ({
         </div>
       </div>
     </div>
+    <AddCompanyExpenseModal isOpen={isExpenseOpen} onClose={() => setIsExpenseOpen(false)} onAdd={(expense) => setExpenses((current) => [expense, ...current])} />
+    {isImportOpen && <CompanyDataImportPanel onClose={() => setIsImportOpen(false)} />}
+    </>
   );
 };

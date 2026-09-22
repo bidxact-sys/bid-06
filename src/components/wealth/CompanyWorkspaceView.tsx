@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CompanyEntity, LedgerEvent, CapTableMember } from '../../types/wealth';
+import { CompanyDataImportPanel } from '../views/CompanyDataImportPanel';
 
 interface CompanyWorkspaceViewProps {
   company: CompanyEntity;
@@ -39,6 +40,7 @@ export const CompanyWorkspaceView: React.FC<CompanyWorkspaceViewProps> = ({
   const [isSwitchMenuOpen, setIsSwitchMenuOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [isCompanyImportOpen, setIsCompanyImportOpen] = useState(false);
 
   // Dilution Simulator State
   const [raiseAmount, setRaiseAmount] = useState<number>(250000);
@@ -651,8 +653,11 @@ export const CompanyWorkspaceView: React.FC<CompanyWorkspaceViewProps> = ({
                     Official operating statement YTD reconciled under GAAP
                   </p>
                 </div>
-                <div className="text-xs font-mono text-[#4edea3] bg-[#0b1326] px-3 py-1.5 rounded border border-[#222a3d]">
-                  Audited Corporate Books
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setIsCompanyImportOpen(true)} className="rounded border border-[#4edea3]/40 bg-[#4edea3]/10 px-3 py-1.5 text-xs font-mono font-bold text-[#4edea3] hover:bg-[#4edea3]/20">Import Company Data</button>
+                  <div className="text-xs font-mono text-[#4edea3] bg-[#0b1326] px-3 py-1.5 rounded border border-[#222a3d]">
+                    Audited Corporate Books
+                  </div>
                 </div>
               </div>
 
@@ -1408,6 +1413,7 @@ export const CompanyWorkspaceView: React.FC<CompanyWorkspaceViewProps> = ({
           </div>
         </div>
       )}
+      {isCompanyImportOpen && <CompanyDataImportPanel onClose={() => setIsCompanyImportOpen(false)} />}
     </div>
   );
 };

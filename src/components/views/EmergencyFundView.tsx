@@ -32,7 +32,8 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
 
   // Form states
   const [amount, setAmount] = useState<string>('25000');
-  const [targetAccount, setTargetAccount] = useState<string>('Treasury Bills (4.85% APY)');
+  const [monthlyContribution, setMonthlyContribution] = useState<string>('5000');
+  const [isRecurringAllocation, setIsRecurringAllocation] = useState(false);
   const [memo, setMemo] = useState<string>('Q3 Operating Cash Surplus Allocation');
 
   // Stress test state
@@ -68,7 +69,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
         date: new Date().toISOString().slice(0, 10),
         type: 'Deposit' as const,
         amount: amountNum,
-        description: memo || `Surplus Treasury Allocation to ${targetAccount}`,
+        description: memo || 'Surplus Treasury Allocation',
         balanceAfter: newBalance,
       },
       ...fundState.history,
@@ -84,7 +85,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
     const txn: CashTransaction = {
       id: `TXN-2024-${Math.floor(5000 + Math.random() * 5000)}`,
       date: new Date().toISOString().slice(0, 10),
-      description: `Reserve Fund Deposit - ${targetAccount}`,
+      description: `${isRecurringAllocation ? 'Recurring reserve allocation' : 'Reserve fund deposit'}${isRecurringAllocation ? ` ($${parseFloat(monthlyContribution || '0').toLocaleString()}/month)` : ''}`,
       category: 'Emergency & Capital Reserves',
       counterparty: 'Bid Exact Capital Reserve Trust',
       type: 'outflow', // outflow from operating cash into protected emergency reserve
@@ -176,6 +177,8 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
           <button
             onClick={() => {
               setAmount('25000');
+              setMonthlyContribution('5000');
+              setIsRecurringAllocation(false);
               setMemo('Operating Cash Surplus Allocation');
               setIsDepositModalOpen(true);
             }}
@@ -263,23 +266,6 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
           />
         </div>
 
-        {/* Portfolio Breakdown by Investment Instrument */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-[#222a3d]">
-          {fundState.allocations.map((alloc, idx) => (
-            <div key={idx} className="p-3 bg-[#0b1326] border border-[#222a3d] rounded-lg">
-              <div className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-white">{alloc.asset}</span>
-                <span className="font-mono text-[#4edea3] text-[11px] font-bold">{alloc.apy} APY</span>
-              </div>
-              <div className="text-base font-bold font-mono text-white mt-1">
-                ${alloc.amount.toLocaleString()}
-              </div>
-              <div className="text-[10px] text-[#86948a] mt-0.5">
-                {alloc.share}% of total fund • {alloc.institution}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Interactive Stress-Test Scenario Simulator */}
@@ -463,18 +449,35 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-mono text-[#86948a] mb-1">Target Reserve Instrument</label>
-                <select
-                  value={targetAccount}
-                  onChange={(e) => setTargetAccount(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded text-white focus:outline-none focus:border-[#4edea3]"
-                >
-                  <option value="US Treasury Bills (4.85% APY)">US Treasury Bills 3-Month (4.85% APY)</option>
-                  <option value="Vanguard Fed Money Market (5.15% APY)">Vanguard Fed Money Market (5.15% APY)</option>
-                  <option value="Chase High-Yield Escrow (4.25% APY)">Chase High-Yield Escrow (4.25% APY)</option>
-                </select>
-              </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div>
+  <label className="block text-[11px] font-mono text-[#86948a] mb-1">Monthly Contribution ($ USD)</label>
+  <input
+  type="number"
+  min="0"
+  step="500"
+  placeholder="5000"
+  value={monthlyContribution}
+  onChange={(e) => setMonthlyContribution(e.target.value)}
+  disabled={!isRecurringAllocation}
+  className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded text-white font-mono focus:outline-none focus:border-[#4edea3] disabled:opacity-40 disabled:cursor-not-allowed"
+  />
+  <p className="mt-1 text-[10px] text-[#86948a]">Recurring amount added each month.</p>
+  </div>
+  <div className="flex items-start pt-6">
+  <label className="flex items-center gap-2 text-[11px] text-[#dae2fd] cursor-pointer">
+  <input
+  type="checkbox"
+  checked={isRecurringAllocation}
+  onChange={(e) => setIsRecurringAllocation(e.target.checked)}
+  className="h-3.5 w-3.5 accent-[#4edea3]"
+  />
+  <span>Enable recurring allocation</span>
+  </label>
+  </div>
+  </div>
+
+
 
               <div>
                 <label className="block text-[11px] font-mono text-[#86948a] mb-1">Allocation Description / Note</label>
@@ -487,7 +490,7 @@ export const EmergencyFundView: React.FC<EmergencyFundViewProps> = ({
               </div>
 
               <div className="p-3 bg-[#4edea3]/5 border border-[#4edea3]/20 rounded text-[11px] text-[#dae2fd]">
-                Transfers from <strong>Chase Operating ••8491</strong>. Increases company runway by ~{(parseFloat(amount || '0') / fundState.monthlyBurnRate).toFixed(1)} months.
+                Transfers from <strong>Chase Operating ••8491</strong>. The initial allocation increases company runway by ~{(parseFloat(amount || '0') / fundState.monthlyBurnRate).toFixed(1)} months{isRecurringAllocation && `, followed by $${parseFloat(monthlyContribution || '0').toLocaleString()} each month`}.
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2.5">

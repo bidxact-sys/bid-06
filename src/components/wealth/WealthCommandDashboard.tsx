@@ -63,7 +63,7 @@ export const WealthCommandDashboard: React.FC<WealthCommandDashboardProps> = ({
       {/* Top Command Banner */}
       <section className="px-4 sm:px-6 py-5 sm:py-8 bg-[#060e20] border-b border-[#222a3d]">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-1 min-w-0 flex-col space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-['Manrope'] font-bold text-xl sm:text-2xl text-[#dae2fd]">
                 Good morning, Umer
@@ -90,8 +90,27 @@ export const WealthCommandDashboard: React.FC<WealthCommandDashboardProps> = ({
             </div>
           </div>
 
-          {/* Action Utilities */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {/* Action Utilities and daily snapshot */}
+          <div className="flex w-full flex-col items-stretch gap-3 shrink-0 xl:w-[58%]">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-[#222a3d] bg-[#131b2e] px-3 py-2.5">
+                <span className="block font-mono text-[9px] uppercase tracking-wider text-[#91a0c5]">Liquid cash</span>
+                <span className="mt-1 block font-mono text-sm font-bold text-[#4edea3]">{mask(metrics.personalCash)}</span>
+                <span className="mt-0.5 block text-[10px] text-[#91a0c5]">Personal only</span>
+              </div>
+              <div className="rounded-lg border border-[#222a3d] bg-[#131b2e] px-3 py-2.5">
+                <span className="block font-mono text-[9px] uppercase tracking-wider text-[#91a0c5]">Net position</span>
+                <span className="mt-1 block font-mono text-sm font-bold text-[#dae2fd]">{mask(metrics.personalNetWorth)}</span>
+                <span className="mt-0.5 block text-[10px] text-[#91a0c5]">Across all books</span>
+              </div>
+              <div className="rounded-lg border border-[#222a3d] bg-[#131b2e] px-3 py-2.5">
+                <span className="block font-mono text-[9px] uppercase tracking-wider text-[#91a0c5]">Pending</span>
+                <span className="mt-1 block font-mono text-sm font-bold text-[#f6c453]">{governanceRequests.length}</span>
+                <span className="mt-0.5 block text-[10px] text-[#91a0c5]">Reviews</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2.5">
+
             <button
               type="button"
               onClick={onOpenExportPdf}
@@ -124,8 +143,9 @@ export const WealthCommandDashboard: React.FC<WealthCommandDashboardProps> = ({
               <span className="material-symbols-outlined text-sm font-bold">add_business</span>
               <span>+ Add Company</span>
             </button>
+            </div>
           </div>
-        </div>
+          </div>
       </section>
 
       {/* Section 1: Executive Key Metrics */}

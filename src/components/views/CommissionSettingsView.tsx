@@ -2206,6 +2206,8 @@ export const CommissionSettingsView: React.FC<CommissionSettingsViewProps> = ({
                   onChange={(e) => setNewTeamDept(e.target.value)}
                   className="w-full px-3 py-1.5 rounded bg-[#0b1326] border border-[#222a3d] text-white focus:outline-none"
                 >
+                  <option value="Sales">Sales</option>
+                  <option value="Services">Services</option>
                   <option value="Pre-Construction">Pre-Construction</option>
                   <option value="Civil & Infrastructure">Civil & Infrastructure</option>
                   <option value="VDC & BIM">VDC & BIM</option>

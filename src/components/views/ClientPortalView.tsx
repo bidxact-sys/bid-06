@@ -84,7 +84,26 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const activeClient = availableClients.find((c) => c.id === selectedClientId) || availableClients[0];
 
   // Active Navigation Sub-tab
-  const [activeTab, setActiveTab] = useState<'projects' | 'rfis' | 'deliverables' | 'contracts' | 'documents'>('projects');
+  const [activeTab, setActiveTab] = useState<'projects' | 'rfis' | 'deliverables' | 'contracts' | 'documents' | 'quote' | 'hiring' | 'tasks' | 'pricing' | 'notifications' | 'people' | 'messages' | 'execution' | 'finance'>('projects');
+  const [clientUploads, setClientUploads] = useState<string[]>([]);
+  const [hiringSubmitted, setHiringSubmitted] = useState(false);
+  const [companyPeople, setCompanyPeople] = useState([{ name: 'Maya Chen', role: 'Project manager', source: 'Our team', status: 'Active' }, { name: 'Luis Rivera', role: 'Estimator', source: 'Our team', status: 'Active' }, { name: 'Jordan Blake', role: 'Site coordinator', source: 'Your employee', status: 'Invited' }]);
+  const [teamRequests, setTeamRequests] = useState<string[]>([]);
+  const [portalMessages, setPortalMessages] = useState([{ from: 'Maya Chen', text: 'The takeoff package is ready for your review.', time: '10 min ago' }, { from: 'You', text: 'Please prioritize the foundation scope.', time: '28 min ago' }]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [taskAssignee, setTaskAssignee] = useState('Maya Chen');
+  const [companyTasks, setCompanyTasks] = useState([{ title: 'Review foundation scope', assignee: 'Maya Chen', status: 'In progress' }, { title: 'Confirm material allowances', assignee: 'Jordan Blake', status: 'To do' }]);
+  const [employeeInvite, setEmployeeInvite] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [quoteMessage, setQuoteMessage] = useState('');
+  const [quoteSubmitted, setQuoteSubmitted] = useState(false);
+  const [quoteApproved, setQuoteApproved] = useState(false);
+  const [assignmentMode, setAssignmentMode] = useState<'Smart assigned' | 'Manual assigned' | 'Outsourced'>('Smart assigned');
+  const [demoMode, setDemoMode] = useState(true);
+  const resetDemoScenario = () => { setQuoteMessage(''); setQuoteSubmitted(false); setQuoteApproved(false); setTeamRequests([]); setCompanyTasks([{ title: 'Review foundation scope', assignee: 'Maya Chen', status: 'In progress' }, { title: 'Confirm material allowances', assignee: 'Jordan Blake', status: 'To do' }]); setPortalMessages([{ from: 'Maya Chen', text: 'The takeoff package is ready for your review.', time: '10 min ago' }, { from: 'You', text: 'Please prioritize the foundation scope.', time: '28 min ago' }]); setActiveTab('projects'); };
+  const [clientPriceList, setClientPriceList] = useState([{ code: 'CL-MAT-001', name: 'Client concrete allowance', unit: 'CY', price: 172.5 }, { code: 'CL-MAT-002', name: 'Client rebar allowance', unit: 'LB', price: 0.86 }]);
+  const [selectedEstimateMaterials, setSelectedEstimateMaterials] = useState<string[]>([]);
 
   // RFI Filter & Search State
   const [rfiSearchQuery, setRfiSearchQuery] = useState('');
@@ -92,6 +111,30 @@ export const ClientPortalView: React.FC<ClientPortalViewProps> = ({
   const [selectedRfiForDetail, setSelectedRfiForDetail] = useState<RfiItem | null>(null);
   const [clientResponseText, setClientResponseText] = useState('');
   const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState('');
+
+  const startStripeCheckout = async () => {
+    setStripeLoading(true);
+    setStripeError('');
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 2058175,
+          description: 'QTE-2024-041 mobilization deposit',
+          referenceId: 'QTE-2024-041-deposit',
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.url) throw new Error(result.error || 'Unable to start Stripe Checkout');
+      window.location.href = result.url;
+    } catch (error) {
+      setStripeError(error instanceof Error ? error.message : 'Unable to start Stripe Checkout');
+      setStripeLoading(false);
+    }
+  };
 
   // New RFI Modal State for External Client
   const [isNewRfiModalOpen, setIsNewRfiModalOpen] = useState(false);
@@ -512,7 +555,16 @@ methodology and audited by Bid Exact Senior Estimators.
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#222a3d] pb-2">
+      <div className="grid gap-4 lg:grid-cols-[210px_minmax(0,1fr)] items-start">
+        <aside className="sticky top-4 rounded-2xl border border-[#222a3d] bg-[#0d1728] p-2 shadow-xl">
+          <div className="flex items-center justify-between gap-2 px-3 py-2"><div className="text-[10px] font-mono uppercase tracking-wider text-[#86948a]">Client workspace</div><span className="rounded-full bg-[#e0b44a]/15 px-2 py-0.5 text-[9px] font-bold text-[#e0b44a]">Demo mode</span></div>
+          <button type="button" onClick={() => { setDemoMode((enabled) => !enabled); resetDemoScenario(); }} className="mx-2 mb-2 w-[calc(100%-1rem)] rounded-lg border border-[#2b3851] px-3 py-2 text-left text-[10px] font-semibold text-[#94a3b8] hover:border-[#38bdf8] hover:text-white">{demoMode ? 'Reset demo scenario' : 'Start demo scenario'}</button>
+          <div className="space-y-1">
+            {[['projects','Overview',Building2],['execution','Project execution',Layers],['tasks','Tasks',CheckCircle2],['people','People',UserCheck],['messages','Messages',Mail],['quote','New quotation',Upload],['pricing','Estimate pricing',DollarSign],['finance','Finance & allocation',FileSpreadsheet],['rfis','RFIs & responses',FileQuestion],['deliverables','Delivered files',FolderDown],['hiring','Hire approved team',UserCheck],['contracts','Contracts & invoices',FileText],['documents','Documents',FolderArchive],['notifications','Notifications',AlertCircle]].map(([tab,label,Icon]) => <button key={tab as string} type="button" onClick={() => setActiveTab(tab as typeof activeTab)} className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${activeTab === tab ? 'bg-[#38bdf8] font-bold text-[#0b1326]' : 'text-[#94a3b8] hover:bg-[#131b2e] hover:text-white'}`}><Icon className="h-3.5 w-3.5" /><span>{label as string}</span>{tab === 'notifications' && <span className="ml-auto rounded-full bg-[#e0b44a] px-1.5 text-[9px] font-bold text-[#0b1326]">3</span>}</button>)}
+          </div>
+        </aside>
+        <div className="min-w-0">
+        <div className="hidden">
         <div className="flex items-center gap-1.5 p-1 bg-[#131b2e] border border-[#222a3d] rounded-xl font-mono text-xs overflow-x-auto max-w-full">
           <button
             onClick={() => setActiveTab('projects')}
@@ -603,6 +655,24 @@ methodology and audited by Bid Exact Senior Estimators.
           </div>
         )}
       </div>
+
+      {activeTab === 'execution' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><div className="flex items-start justify-between"><div><h2 className="text-base font-bold text-white">Project execution</h2><p className="mt-1 text-xs text-[#94a3b8]">One calm view of what is moving, what needs you, and what is delivered.</p></div><span className="rounded-full bg-[#4edea3]/15 px-2.5 py-1 text-[10px] font-bold text-[#4edea3]">{quoteApproved ? 'Active project' : 'On track'}</span></div>{quoteApproved && <div className="mt-4 rounded-xl border border-[#38bdf8]/30 bg-[#0b1d31] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold text-white">Riverside Office Fitout</p><p className="mt-1 text-[10px] text-[#94a3b8]">Added to Active Project Catalog · $248,000 allocated</p></div><label className="text-[10px] text-[#94a3b8]">Assignment mode<select value={assignmentMode} onChange={(event) => setAssignmentMode(event.target.value as typeof assignmentMode)} className="ml-2 rounded-lg border border-[#2b3851] bg-[#131b2e] px-2 py-1.5 text-[10px] text-white"><option>Smart assigned</option><option>Manual assigned</option><option>Outsourced</option></select></label></div><div className="mt-3 flex items-center gap-2 text-[10px] text-[#4edea3]"><Clock className="h-3.5 w-3.5" /> Employee timer starts when the assignment is accepted</div></div>}<div className="mt-5 grid gap-3 sm:grid-cols-3">{[['Design & scope','Complete','100%'],['Estimating','In progress','72%'],['Construction handoff','Next','24%']].map(([label,status,progress]) => <div key={label} className="rounded-xl border border-[#222a3d] bg-[#0b1329] p-4"><p className="text-xs font-semibold text-white">{label}</p><p className="mt-2 text-[10px] text-[#94a3b8]">{status}</p><div className="mt-3 h-1.5 rounded-full bg-[#1d2940]"><div className="h-1.5 rounded-full bg-[#38bdf8]" style={{ width: progress }} /></div></div>)}</div></section>}
+
+      {activeTab === 'people' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><div className="flex items-start justify-between"><div><h2 className="text-base font-bold text-white">Your company people</h2><p className="mt-1 text-xs text-[#94a3b8]">Run your approved team and your own employees together.</p></div><span className="text-xs text-[#4edea3]">{companyPeople.length} people</span></div><div className="mt-4 space-y-2">{companyPeople.map((person) => <div key={person.name} className="flex items-center justify-between rounded-xl border border-[#222a3d] bg-[#0b1329] p-3"><div><p className="text-xs font-semibold text-white">{person.name}</p><p className="mt-1 text-[10px] text-[#94a3b8]">{person.role} · {person.source}</p></div><span className="rounded-full bg-[#4edea3]/15 px-2 py-1 text-[10px] text-[#4edea3]">{person.status}</span></div>)}</div><div className="mt-4 flex gap-2"><input value={employeeInvite} onChange={(event) => setEmployeeInvite(event.target.value)} placeholder="employee@yourcompany.com" className="min-w-0 flex-1 rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white placeholder:text-[#64748b]" /><button type="button" onClick={() => { if (!employeeInvite.trim()) return; setCompanyPeople((people) => [...people, { name: employeeInvite.split('@')[0], role: 'Company employee', source: 'Your employee', status: 'Invited' }]); setInviteMessage('Invite sent'); setEmployeeInvite(''); }} className="rounded-lg bg-[#38bdf8] px-3 py-2 text-xs font-bold text-[#0b1326]">Invite</button></div>{inviteMessage && <p className="mt-2 text-[10px] text-[#4edea3]">{inviteMessage}</p>}</section>}
+
+      {activeTab === 'messages' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Project messages</h2><p className="mt-1 text-xs text-[#94a3b8]">Keep decisions with the project so your team always has context.</p><div className="mt-4 space-y-2">{portalMessages.map((message, index) => <div key={`${message.from}-${index}`} className={`max-w-[85%] rounded-xl border border-[#222a3d] p-3 ${message.from === 'You' ? 'ml-auto bg-[#133044]' : 'bg-[#0b1329]'}`}><p className="text-[10px] font-bold text-[#38bdf8]">{message.from}<span className="ml-2 font-normal text-[#64748b]">{message.time}</span></p><p className="mt-1 text-xs text-white">{message.text}</p></div>)}</div><div className="mt-4 flex gap-2"><input value={messageDraft} onChange={(event) => setMessageDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && event.keyCode !== 229 && messageDraft.trim()) { setPortalMessages((messages) => [...messages, { from: 'You', text: messageDraft.trim(), time: 'Just now' }]); setMessageDraft(''); } }} placeholder="Write a project update..." className="min-w-0 flex-1 rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white placeholder:text-[#64748b]" /><button type="button" onClick={() => { if (!messageDraft.trim()) return; setPortalMessages((messages) => [...messages, { from: 'You', text: messageDraft.trim(), time: 'Just now' }]); setMessageDraft(''); }} className="rounded-lg bg-[#4edea3] px-3 py-2 text-xs font-bold text-[#0b1326]">Send</button></div></section>}
+
+      {activeTab === 'finance' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Finance & allocation</h2><p className="mt-1 text-xs text-[#94a3b8]">See the money picture without opening a finance system.</p><div className="mt-4 grid gap-3 sm:grid-cols-3">{[['Approved budget','$248,000','bg-[#38bdf8]'],['Committed','$161,400','bg-[#4edea3]'],['Available','$86,600','bg-[#e0b44a]']].map(([label,value,color]) => <div key={label} className="rounded-xl border border-[#222a3d] bg-[#0b1329] p-4"><p className="text-[10px] text-[#94a3b8]">{label}</p><p className="mt-2 text-xl font-bold text-white">{value}</p><div className={`mt-3 h-1 rounded-full ${color}`} /></div>)}</div><div className="mt-4 rounded-xl border border-[#222a3d] bg-[#0b1329] p-4"><div className="flex justify-between text-xs"><span className="text-white">Estimating & preconstruction</span><span className="text-[#4edea3]">$42,800</span></div><div className="mt-3 flex justify-between text-xs"><span className="text-white">Materials allocation</span><span className="text-[#e0b44a]">$118,600</span></div><div className="mt-3 flex justify-between text-xs"><span className="text-white">Team services</span><span className="text-[#38bdf8]">$36,900</span></div></div></section>}
+
+      {activeTab === 'hiring' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Hire approved team members</h2><p className="mt-1 text-xs text-[#94a3b8]">Choose who you need. We handle approval and onboarding so you stay in control.</p><div className="mt-4 grid gap-3 sm:grid-cols-3">{[['Avery Stone','Senior estimator','$95/hr'],['Priya Nair','BIM coordinator','From $85/hr'],['Noah Williams','Project manager','From $110/hr']].map(([name,role,rate]) => <div key={name} className="rounded-xl border border-[#222a3d] bg-[#0b1329] p-4"><div className="flex items-center justify-between"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#38bdf8]/15 text-xs font-bold text-[#38bdf8]">{name.split(' ').map((part) => part[0]).join('')}</div><span className="text-[10px] text-[#4edea3]">Available</span></div><p className="mt-3 text-xs font-bold text-white">{name}</p><p className="mt-1 text-[10px] text-[#94a3b8]">{role}</p><p className="mt-3 font-mono text-[10px] text-[#e0b44a]">{rate}</p><button type="button" onClick={() => setTeamRequests((requests) => requests.includes(name) ? requests : [...requests, name])} className="mt-3 w-full rounded-lg bg-[#4edea3] px-3 py-2 text-[10px] font-bold text-[#0b1326]">{teamRequests.includes(name) ? 'Request sent' : 'Request this person'}</button></div>)}</div>{teamRequests.length > 0 && <p className="mt-3 text-xs text-[#4edea3]">{teamRequests.length} team request(s) sent. Your team lead will confirm next steps.</p>}</section>}
+
+      {activeTab === 'tasks' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Tasks for your team</h2><p className="mt-1 text-xs text-[#94a3b8]">Assign work to our team or your own employees, then follow it in one place.</p><div className="mt-4 flex flex-col gap-2 sm:flex-row"><input value={newTaskTitle} onChange={(event) => setNewTaskTitle(event.target.value)} placeholder="What needs to be done?" className="min-w-0 flex-1 rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white placeholder:text-[#64748b]" /><select value={taskAssignee} onChange={(event) => setTaskAssignee(event.target.value)} className="rounded-lg border border-[#2b3851] bg-[#131b2e] px-3 py-2 text-xs text-white">{companyPeople.map((person) => <option key={person.name}>{person.name}</option>)}</select><button type="button" onClick={() => { if (!newTaskTitle.trim()) return; setCompanyTasks((tasks) => [...tasks, { title: newTaskTitle.trim(), assignee: taskAssignee, status: 'To do' }]); setNewTaskTitle(''); }} className="rounded-lg bg-[#4edea3] px-3 py-2 text-xs font-bold text-[#0b1326]">Assign task</button></div><div className="mt-4 space-y-2">{companyTasks.map((task, index) => <div key={`${task.title}-${index}`} className="flex items-center justify-between rounded-xl border border-[#222a3d] bg-[#0b1329] p-3"><div><p className="text-xs font-semibold text-white">{task.title}</p><p className="mt-1 text-[10px] text-[#94a3b8]">Assigned to {task.assignee} · {displayedProjects[0]?.title}</p></div><button type="button" onClick={() => setCompanyTasks((tasks) => tasks.map((item, itemIndex) => itemIndex === index ? { ...item, status: item.status === 'Done' ? 'To do' : 'Done' } : item))} className={`rounded-full px-2 py-1 text-[10px] font-bold ${task.status === 'Done' ? 'bg-[#4edea3]/15 text-[#4edea3]' : 'bg-[#e0b44a]/15 text-[#e0b44a]'}`}>{task.status}</button></div>)}</div></section>}
+
+      {activeTab === 'quote' && <section className="space-y-4"><div className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="text-base font-bold text-white">Start a quotation</h2><p className="mt-1 text-xs text-[#94a3b8]">Tell us what you need. Admin gets an alert immediately and your request stays visible here.</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${quoteSubmitted ? 'bg-[#4edea3]/15 text-[#4edea3]' : 'bg-[#38bdf8]/15 text-[#38bdf8]'}`}>{quoteSubmitted ? 'Sent to admin' : 'Draft'}</span></div><textarea value={quoteMessage} onChange={(event) => setQuoteMessage(event.target.value)} placeholder="Describe your project, scope, location, deadline, or anything the estimating team should know..." className="mt-4 min-h-28 w-full rounded-xl border border-[#2b3851] bg-[#0b1329] p-3 text-xs text-white outline-none placeholder:text-[#64748b] focus:border-[#38bdf8]" /><label className="mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#38bdf8]/50 bg-[#0b1329] text-center"><Upload className="h-5 w-5 text-[#38bdf8]" /><span className="mt-1 text-xs font-semibold text-white">Attach plans and bid documents</span><input type="file" multiple className="sr-only" onChange={(event) => setClientUploads(Array.from(event.target.files ?? []).map((file) => file.name))} /></label>{clientUploads.length > 0 && <div className="mt-3 rounded-lg bg-[#132728] p-3 text-xs text-[#4edea3]">{clientUploads.length} file(s) attached: {clientUploads.join(', ')}</div>}<button type="button" disabled={!quoteMessage.trim() && !clientUploads.length} onClick={() => setQuoteSubmitted(true)} className="mt-4 rounded-lg bg-[#4edea3] px-4 py-2 text-xs font-bold text-[#07101f] disabled:cursor-not-allowed disabled:opacity-40">Send quotation request</button>{quoteSubmitted && <p className="mt-3 text-xs text-[#4edea3]">Admin notification sent. You will receive an email and portal update when your quote is ready.</p>}</div>{quoteSubmitted && <div className="rounded-2xl border border-[#e0b44a]/40 bg-[#211b0e] p-5"><div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wider text-[#e0b44a]">Quotation ready for approval</p><h3 className="mt-1 text-lg font-bold text-white">QTE-2026-184 · Riverside Office Fitout</h3></div><span className="rounded-full bg-[#e0b44a]/15 px-2 py-1 text-[10px] font-bold text-[#e0b44a]">Email sent</span></div><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-[10px] text-[#94a3b8]">Total project quote</p><p className="mt-1 text-xl font-bold text-white">$248,000</p></div><div><p className="text-[10px] text-[#94a3b8]">Valid until</p><p className="mt-1 text-sm font-semibold text-white">Oct 21, 2026</p></div><div><p className="text-[10px] text-[#94a3b8]">Approval</p><p className="mt-1 text-sm font-semibold text-[#e0b44a]">{quoteApproved ? 'Approved' : 'Waiting for you'}</p></div></div><button type="button" onClick={() => setQuoteApproved(true)} disabled={quoteApproved} className="mt-4 rounded-lg bg-[#e0b44a] px-4 py-2 text-xs font-bold text-[#15100a] disabled:opacity-60">{quoteApproved ? 'Approved — project activated' : 'Review and approve securely'}</button>{quoteApproved && <div className="mt-4 rounded-xl border border-[#4edea3]/30 bg-[#0b2725] p-3 text-xs text-[#4edea3]">Secure approval recorded. Project added to Active Project Catalog and finance allocation updated.</div>}</div>}</section>}
+
+      {activeTab === 'pricing' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Client estimate pricing</h2><p className="mt-1 text-xs text-[#94a3b8]">These client-specific prices are visible to the estimating team and can be used in this project estimate.</p><div className="mt-4 space-y-2">{clientPriceList.map((item) => <div key={item.code} className="flex items-center justify-between rounded-xl border border-[#222a3d] bg-[#0b1329] p-3"><div><p className="text-xs font-semibold text-white">{item.name}</p><p className="mt-1 font-mono text-[10px] text-[#94a3b8]">{item.code} · {item.unit}</p></div><div className="flex items-center gap-3"><span className="font-mono text-sm text-[#4edea3]">${item.price.toFixed(2)}</span><button type="button" onClick={() => setSelectedEstimateMaterials((items) => items.includes(item.code) ? items : [...items, item.code])} className="rounded-lg bg-[#38bdf8] px-2.5 py-1.5 text-[10px] font-bold text-[#0b1326]">{selectedEstimateMaterials.includes(item.code) ? 'Added' : 'Add to estimate'}</button></div></div>)}</div><div className="mt-4 border-t border-[#222a3d] pt-3 text-xs text-[#94a3b8]">{selectedEstimateMaterials.length} client-priced material(s) selected for estimate</div></section>}
+
+      {activeTab === 'notifications' && <section className="rounded-2xl border border-[#222a3d] bg-[#0d1728] p-5"><h2 className="text-base font-bold text-white">Notifications and responses</h2><div className="mt-4 space-y-2">{['Final takeoff package delivered and ready to download.', 'Team lead responded to RFI-1042.', 'New project task assigned for client price review.'].map((notice) => <div key={notice} className="rounded-xl border border-[#222a3d] bg-[#0b1329] p-3 text-xs text-white"><span className="mr-2 text-[#e0b44a]">●</span>{notice}<p className="mt-1 pl-4 text-[10px] text-[#94a3b8]">Just now · linked to your active project</p></div>)}</div></section>}
 
       {/* ========================================================================= */}
       {/* TAB 1: PROJECT STATUS & LIVE MILESTONE TRACKER */}
@@ -1060,9 +1130,14 @@ methodology and audited by Bid Exact Senior Estimators.
               </div>
 
               <div className="flex items-center gap-2 font-mono text-xs">
-                <span className="px-2.5 py-1 rounded bg-[#4edea3]/20 text-[#4edea3] border border-[#4edea3]/30 font-bold uppercase">
-                  DEPOSIT PAID &amp; CLEARED
-                </span>
+                <button
+                  type="button"
+                  onClick={startStripeCheckout}
+                  disabled={stripeLoading}
+                  className="px-3 py-1.5 rounded-lg bg-[#635bff] hover:bg-[#5148d8] disabled:opacity-60 text-white font-bold transition-colors"
+                >
+                  {stripeLoading ? 'Opening Stripe...' : 'Pay deposit with Stripe'}
+                </button>
               </div>
             </div>
 
@@ -1085,6 +1160,8 @@ methodology and audited by Bid Exact Senior Estimators.
                 <div className="text-[10px] text-[#94a3b8]">Billed Upon Final Delivery</div>
               </div>
             </div>
+
+            {stripeError && <p className="text-xs text-red-300" role="alert">{stripeError}</p>}
 
             <div className="pt-2 flex items-center justify-between text-xs font-mono">
               <span className="text-[#94a3b8]">
@@ -1135,6 +1212,9 @@ Transaction ID: pi_3Pz7Q12eZvKYlo2C`;
           }}
         />
       )}
+
+      </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* MODAL 1: CLIENT RFI INSPECT & DIRECT CLARIFICATION RESPONSE */}

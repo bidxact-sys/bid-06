@@ -16,7 +16,6 @@ import {
 // Layout and Views
 import { WealthSidebar } from '../wealth/WealthSidebar';
 import { WealthTopHeader } from '../wealth/WealthTopHeader';
-import { FloatingEntityDock } from '../wealth/FloatingEntityDock';
 import { WealthCommandDashboard } from '../wealth/WealthCommandDashboard';
 import { CompanyWorkspaceView } from '../wealth/CompanyWorkspaceView';
 import { MultiCompanyPortfolioView } from '../wealth/MultiCompanyPortfolioView';
@@ -30,6 +29,7 @@ import { ReviewGovernanceModal } from '../wealth/ReviewGovernanceModal';
 import { WealthExportPdfModal } from '../wealth/WealthExportPdfModal';
 import { WealthAuditLogModal } from '../wealth/WealthAuditLogModal';
 import { GlobalSearchModal } from '../wealth/GlobalSearchModal';
+import { FinanceWorkflowView } from './FinanceWorkflowView';
 
 interface PersonalFinanceHubProps {
   onSwitchWorkspace: (ws: 'personal-finance' | 'pre-con-estimating') => void;
@@ -283,7 +283,7 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
   // STRICT ISOLATION: When a specific company is clicked/selected, render ONLY its dedicated corporate interface
   if (currentCompany) {
     return (
-      <div className="min-h-screen bg-[#060e20] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3]">
+      <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
         <CompanyWorkspaceView
           company={currentCompany}
           onReturnToConsolidated={() => setActiveEntityId(null)}
@@ -312,14 +312,11 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3]">
+    <div className="min-h-screen bg-[#0b1326] text-[#dae2fd] flex flex-col antialiased selection:bg-[#4edea3]/25 selection:text-[#4edea3] theme-surface">
       {/* Top Universal Wealth & Entity Switcher Header */}
       <WealthTopHeader
         activeWorkspace={activeWorkspace}
         onSwitchWorkspace={onSwitchWorkspace}
-        activeEntityId={activeEntityId}
-        onSelectEntity={handleSelectEntity}
-        companies={companies}
         selectedPeriod={selectedPeriod}
         onSelectPeriod={setSelectedPeriod}
         onOpenAddCompany={() => setIsAddCompanyOpen(true)}
@@ -331,7 +328,7 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
       />
 
       {/* Main Split Layout: Sidebar + Operations Surface */}
-      <div className="flex-1 flex overflow-hidden pt-16 lg:pl-72">
+      <div className="flex-1 flex min-h-0 overflow-hidden pt-14 lg:pl-72">
         {/* Left Navigation Sidebar */}
         <WealthSidebar
           activeTab={activeTab}
@@ -388,6 +385,8 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
               }}
               privacyMode={privacyMode}
             />
+          ) : activeTab === 'personal-cash-flow' ? (
+            <FinanceWorkflowView privacyMode={privacyMode} />
           ) : (
             /* E. Secondary Deep Modules (Cash, Investments, Real Estate, Distributions) */
             <WealthSecondaryViews
@@ -402,18 +401,6 @@ export const PersonalFinanceHub: React.FC<PersonalFinanceHubProps> = ({
         </main>
       </div>
 
-      {/* Persistent Floating Entity Quick-Navigation Dock */}
-      <FloatingEntityDock
-        companies={companies}
-        activeEntityId={activeEntityId}
-        onSelectEntity={handleSelectEntity}
-        onOpenAddCompany={() => setIsAddCompanyOpen(true)}
-        onOpenRecordCapital={() => setIsRecordCapitalOpen(true)}
-        privacyMode={privacyMode}
-        onTogglePrivacy={() => setPrivacyMode(!privacyMode)}
-        onSwitchWorkspace={onSwitchWorkspace}
-        activeWorkspace={activeWorkspace}
-      />
 
       {/* Interactive Modal Suite */}
       <AddCompanyModal

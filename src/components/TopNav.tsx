@@ -3,11 +3,6 @@ import {
   Search,
   Bell,
   ChevronDown,
-  Plus,
-  FileQuestion,
-  FileSpreadsheet,
-  Building2,
-  Check,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -16,13 +11,21 @@ import {
   CalendarClock
 } from 'lucide-react';
 
+export type NotificationRole = 'admin' | 'employee' | 'client' | 'hr' | 'team-lead';
+
+type RoleNotification = {
+  id: string;
+  title: string;
+  time: string;
+  desc: string;
+  unread: boolean;
+  type: 'quote' | 'delta' | 'info' | 'alert';
+  audience: NotificationRole[];
+};
+
 interface TopNavProps {
-  onOpenNewRfi: () => void;
-  onOpenNewBid: () => void;
-  onOpenNewClient: () => void;
+  viewerRole?: NotificationRole;
   onOpenCommandPalette: () => void;
-  selectedPeriod: string;
-  onSelectPeriod: (period: string) => void;
   notificationCount: number;
   onToggleMobileMenu?: () => void;
   onNavigateToReminders?: () => void;
@@ -30,54 +33,64 @@ interface TopNavProps {
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
-  onOpenNewRfi,
-  onOpenNewBid,
-  onOpenNewClient,
   onOpenCommandPalette,
-  selectedPeriod,
-  onSelectPeriod,
   notificationCount,
   onToggleMobileMenu,
   onNavigateToReminders,
   urgentReminderCount = 0,
+  viewerRole = 'admin',
 }) => {
-  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState<RoleNotification[]>([]);
+  const [activeRole, setActiveRole] = useState<NotificationRole>(viewerRole);
 
-  const periods = [
-    'Q3 2024 (Active Period)',
-    'Q2 2024 (Closed)',
-    'Q1 2024 (Closed)',
-    'FY 2024 (Full Year Forecast)',
-  ];
-
-  const notifications = [
+  const notificationFeed: RoleNotification[] = [
+    ...liveNotifications,
     {
-      id: 'notif-1',
-      title: 'RFI-2024-089 Delta Calculated',
-      time: '12m ago',
-      desc: 'Structural schedule rebar revision calculated: +$48,150.00 to Bid #BID-8849',
-      unread: true,
-      type: 'delta',
+      id: 'notif-1', title: 'RFI-2024-089 Delta Calculated', time: '12m ago',
+      desc: 'Structural schedule rebar revision calculated: +$48,150.00 to Bid #BID-8849', unread: true, type: 'delta',
+      audience: ['admin', 'team-lead', 'employee'],
     },
     {
-      id: 'notif-2',
-      title: 'Skanska USA Addendum Received',
-      time: '1h ago',
-      desc: 'MEP clash resolution package uploaded for Biotech Innovation Lab',
-      unread: true,
-      type: 'info',
+      id: 'notif-2', title: 'Skanska USA Addendum Received', time: '1h ago',
+      desc: 'MEP clash resolution package uploaded for Biotech Innovation Lab', unread: true, type: 'info',
+      audience: ['admin', 'team-lead', 'employee'],
     },
     {
-      id: 'notif-3',
-      title: 'SLA Escalation Warning',
-      time: '3h ago',
-      desc: 'RFI-2024-092 ceiling plenum clash SLA response due within 6 hours',
-      unread: false,
-      type: 'alert',
+      id: 'notif-3', title: 'SLA Escalation Warning', time: '3h ago',
+      desc: 'RFI-2024-092 ceiling plenum clash SLA response due within 6 hours', unread: false, type: 'alert',
+      audience: ['admin', 'team-lead', 'employee'],
+    },
+    {
+      id: 'notif-4', title: 'HR policy acknowledgement due', time: 'Today',
+      desc: 'Please review and acknowledge the updated employee handbook.', unread: true, type: 'info',
+      audience: ['hr', 'employee'],
+    },
+    {
+      id: 'notif-5', title: 'Quotation status updated', time: 'Today',
+      desc: 'Your quotation request is now being reviewed by the estimating team.', unread: true, type: 'quote',
+      audience: ['client'],
     },
   ];
+  const notifications = notificationFeed.filter((notification) => notification.audience.includes(activeRole));
+
+  // Listen for new client quotation requests from the intake workflow.
+  useEffect(() => {
+    const handleQuoteIntake = (event: Event) => {
+      const detail = (event as CustomEvent<{ title: string; description: string; intakeId: string; audience?: NotificationRole[] }>).detail;
+      const audience = detail.audience ?? ['admin', 'team-lead', 'employee', 'hr'];
+      const notification: RoleNotification = { id: detail.intakeId, title: detail.title, time: 'Just now', desc: detail.description, unread: true, type: 'quote', audience };
+      setLiveNotifications((current) => [notification, ...current.filter((item) => item.id !== notification.id)]);
+      if (audience.includes(activeRole) && 'Notification' in window) {
+        const showDesktopAlert = () => new Notification('New quotation request', { body: detail.description, tag: detail.intakeId });
+        if (Notification.permission === 'granted') showDesktopAlert();
+        else if (Notification.permission === 'default') void Notification.requestPermission().then((permission) => { if (permission === 'granted') showDesktopAlert(); });
+      }
+    };
+    window.addEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
+    return () => window.removeEventListener('bid-exact:quote-intake-received', handleQuoteIntake);
+  }, [activeRole]);
 
   // Close menus on click outside
   useEffect(() => {
@@ -94,7 +107,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   return (
     <header
       id="app-top-header"
-      className="h-14 border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none gap-2 sm:gap-4"
+      className="h-14 min-w-0 overflow-visible border-b border-[#222a3d] bg-[#0b1326] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-50 select-none gap-2 sm:gap-4"
     >
       {/* Left Area: Mobile Menu Toggle & Search Bar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl">
@@ -132,116 +145,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-        {/* Period Selector Dropdown (hidden on very small screens, visible on md+) */}
-        <div className="relative hidden md:block">
-          <button
-            id="btn-period-selector"
-            onClick={() => setShowPeriodMenu(!showPeriodMenu)}
-            className="h-9 px-2.5 sm:px-3 bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] rounded-md text-xs font-medium text-[#dae2fd] flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5 text-[#86948a]" />
-            <span className="font-mono text-xs">{selectedPeriod}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#86948a]" />
-          </button>
-
-          {showPeriodMenu && (
-            <div
-              id="menu-period-dropdown"
-              className="absolute right-0 mt-1.5 w-60 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
-            >
-              <div className="px-3 py-1.5 text-[10px] uppercase font-mono tracking-wider text-[#86948a] border-b border-[#222a3d]">
-                Reporting Fiscal Period
-              </div>
-              {periods.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    onSelectPeriod(p);
-                    setShowPeriodMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs font-mono text-[#dae2fd] hover:bg-[#222a3d] flex items-center justify-between transition-colors"
-                >
-                  <span>{p}</span>
-                  {selectedPeriod === p && (
-                    <Check className="w-3.5 h-3.5 text-[#4edea3]" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Primary "+ Create" Button */}
-        <div className="relative">
-          <button
-            id="btn-create-primary"
-            onClick={() => setShowCreateMenu(!showCreateMenu)}
-            className="h-9 px-2.5 sm:px-3.5 bg-[#4edea3] hover:bg-[#40cf95] active:scale-[0.98] text-[#003824] rounded-md text-xs font-semibold flex items-center gap-1 sm:gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden sm:inline">Create</span>
-            <ChevronDown className="w-3.5 h-3.5 stroke-[2.5] opacity-75" />
-          </button>
-
-          {showCreateMenu && (
-            <div
-              id="menu-create-dropdown"
-              className="absolute right-0 mt-1.5 w-52 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl py-1.5 z-50"
-            >
-              <button
-                id="btn-menu-new-rfi"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewRfi();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#ff7886]/10 text-[#ffb4ab]">
-                  <FileQuestion className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">New Pre-Con RFI</div>
-                  <div className="text-[10px] text-[#86948a]">Formal inquiry to architect / GC</div>
-                </div>
-              </button>
-
-              <button
-                id="btn-menu-new-bid"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewBid();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#4edea3]/10 text-[#4edea3]">
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">New Proposal / Bid</div>
-                  <div className="text-[10px] text-[#86948a]">Create takeoff estimate package</div>
-                </div>
-              </button>
-
-              <button
-                id="btn-menu-new-client"
-                onClick={() => {
-                  setShowCreateMenu(false);
-                  onOpenNewClient();
-                }}
-                className="w-full px-3 py-2 text-left text-xs text-[#dae2fd] hover:bg-[#222a3d] flex items-center gap-2.5 transition-colors"
-              >
-                <div className="p-1 rounded bg-[#3b82f6]/10 text-[#adc6ff]">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#dae2fd]">Add Client Account</div>
-                  <div className="text-[10px] text-[#86948a]">Tier-1 GC or developer profile</div>
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Notification Bell */}
         <div className="relative">
           <button
@@ -249,9 +152,12 @@ export const TopNav: React.FC<TopNavProps> = ({
             onClick={() => setShowNotifications(!showNotifications)}
             className="w-9 h-9 rounded-md bg-[#131b2e] hover:bg-[#171f33] border border-[#222a3d] flex items-center justify-center text-[#86948a] hover:text-[#dae2fd] relative transition-colors cursor-pointer"
             title="Notifications & SLA Alerts"
+            aria-label="Notifications & SLA Alerts"
+            aria-expanded={showNotifications}
+            aria-controls="menu-notifications-popover"
           >
             <Bell className="w-4 h-4" />
-            {notificationCount > 0 && (
+            {(notificationCount > 0 || notifications.some((notification) => notification.unread)) && (
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ff7886] rounded-full ring-2 ring-[#0b1326]" />
             )}
           </button>
@@ -259,13 +165,13 @@ export const TopNav: React.FC<TopNavProps> = ({
           {showNotifications && (
             <div
               id="menu-notifications-popover"
-              className="absolute right-0 mt-1.5 w-80 bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1.5rem))] max-h-[calc(100vh-5rem)] bg-[#171f33] border border-[#2d3449] rounded-lg shadow-2xl z-[100] overflow-hidden"
             >
               <div className="px-3 py-2.5 border-b border-[#222a3d] flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#dae2fd] flex items-center gap-1.5">
                   Live Notifications & SLA Alerts
                   <span className="text-[10px] font-mono px-1.5 py-0.2 bg-[#ff7886]/20 text-[#ffb4ab] rounded">
-                    2 unread
+                    {notifications.filter((notification) => notification.unread).length} unread
                   </span>
                 </span>
                 <button
@@ -343,9 +249,18 @@ export const TopNav: React.FC<TopNavProps> = ({
           </div>
           <div className="hidden lg:block text-left leading-tight">
             <div className="text-xs font-semibold text-[#dae2fd]">Marcus Vance</div>
-            <div className="text-[10px] font-mono tracking-wider text-[#86948a] uppercase">
-              Managing Principal
-            </div>
+            <select
+              aria-label="Preview notification role"
+              value={activeRole}
+              onChange={(event) => { setActiveRole(event.target.value as NotificationRole); setShowNotifications(false); }}
+              className="mt-0.5 max-w-32 bg-transparent text-[10px] font-mono tracking-wider text-[#86948a] uppercase outline-none cursor-pointer"
+            >
+              <option value="admin">Admin</option>
+              <option value="employee">Employee</option>
+              <option value="client">Client</option>
+              <option value="hr">HR</option>
+              <option value="team-lead">Team Lead</option>
+            </select>
           </div>
         </div>
       </div>

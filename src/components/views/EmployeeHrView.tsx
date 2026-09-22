@@ -52,13 +52,20 @@ export const EmployeeHrView: React.FC<EmployeeHrViewProps> = ({
   const avgSalary = totalEmployees > 0 ? totalPayrollBurden / totalEmployees : 0;
   const activeCount = employees.filter((e) => e.status === 'Active').length;
 
+  const departmentGroups: Record<string, string[]> = {
+    Sales: ['Client Relations'],
+    Services: ['Estimating Operations', 'VDC & BIM', 'Pre-Construction'],
+  };
+
   const filteredEmployees = employees.filter((e) => {
     const matchesSearch =
       e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = departmentFilter === 'all' || e.department === departmentFilter;
+    const matchesDept = departmentFilter === 'all' ||
+      departmentGroups[departmentFilter]?.includes(e.department) ||
+      e.department === departmentFilter;
     return matchesSearch && matchesDept;
   });
 
@@ -228,7 +235,10 @@ export const EmployeeHrView: React.FC<EmployeeHrViewProps> = ({
               className="px-2.5 py-1.5 bg-[#0b1326] border border-[#222a3d] rounded text-xs text-[#dae2fd] focus:outline-none focus:border-[#4edea3]"
             >
               <option value="all">All Departments</option>
+              <option value="Sales">Sales</option>
+              <option value="Services">Services</option>
               <option value="Pre-Construction">Pre-Construction</option>
+              <option value="Estimating Operations">Estimating Operations</option>
               <option value="VDC & BIM">VDC & BIM</option>
               <option value="Executive Leadership">Executive Leadership</option>
               <option value="Client Relations">Client Relations</option>
@@ -521,9 +531,11 @@ export const EmployeeHrView: React.FC<EmployeeHrViewProps> = ({
                     onChange={(e) => setDepartment(e.target.value as any)}
                     className="w-full px-3 py-2 bg-[#0b1326] border border-[#222a3d] rounded text-white focus:outline-none focus:border-[#4edea3]"
                   >
-                    <option value="Pre-Construction">Pre-Construction</option>
-                    <option value="VDC & BIM">VDC & BIM</option>
-                    <option value="Estimating Operations">Estimating Operations</option>
+              <option value="Sales">Sales</option>
+              <option value="Services">Services</option>
+              <option value="Pre-Construction">Pre-Construction</option>
+              <option value="VDC & BIM">VDC & BIM</option>
+              <option value="Estimating Operations">Estimating Operations</option>
                     <option value="Executive Leadership">Executive Leadership</option>
                     <option value="Client Relations">Client Relations</option>
                     <option value="Finance & Legal">Finance & Legal</option>
