@@ -93,6 +93,18 @@ export const notifications = pgTable('app_notifications', {
   createdAt: timestamps.createdAt,
 })
 
+export const salesLeads = pgTable('app_sales_leads', {
+  id: uuid('id').defaultRandom().primaryKey(), workspaceId: uuid('workspace_id').notNull(), companyName: text('company_name').notNull(), clientName: text('client_name').notNull(), companyDescription: text('company_description'), scopeOfWork: text('scope_of_work'), source: text('source'), stage: text('stage').default('new').notNull(), temperature: text('temperature').default('warm').notNull(), estimatedValue: numeric('estimated_value', { precision: 14, scale: 2 }).default('0').notNull(), ownerUserId: text('owner_user_id').notNull(), teamLeadUserId: text('team_lead_user_id'), nextFollowUpAt: timestamp('next_follow_up_at', { withTimezone: true }), notes: text('notes'), ...timestamps,
+})
+
+export const salesActivities = pgTable('app_sales_activities', {
+  id: uuid('id').defaultRandom().primaryKey(), workspaceId: uuid('workspace_id').notNull(), leadId: uuid('lead_id').notNull(), ownerUserId: text('owner_user_id').notNull(), activityType: text('activity_type').notNull(), subject: text('subject').notNull(), notes: text('notes'), scheduledAt: timestamp('scheduled_at', { withTimezone: true }), completedAt: timestamp('completed_at', { withTimezone: true }), outcome: text('outcome'), createdAt: timestamps.createdAt,
+})
+
+export const attendanceRecords = pgTable('app_attendance_records', {
+  id: uuid('id').defaultRandom().primaryKey(), workspaceId: uuid('workspace_id').notNull(), employeeUserId: text('employee_user_id').notNull(), attendanceDate: date('attendance_date').notNull(), clockIn: timestamp('clock_in', { withTimezone: true }), clockOut: timestamp('clock_out', { withTimezone: true }), status: text('status').default('present').notNull(), notes: text('notes'), createdAt: timestamps.createdAt,
+})
+
 export const auditLogs = pgTable('app_audit_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
   workspaceId: uuid('workspace_id').notNull(),
@@ -105,4 +117,4 @@ export const auditLogs = pgTable('app_audit_logs', {
   createdAt: timestamps.createdAt,
 })
 
-export const appSchema = { workspaces, memberships, clients, employees, projects, reminders, notifications, auditLogs }
+export const appSchema = { workspaces, memberships, clients, employees, projects, reminders, notifications, salesLeads, salesActivities, attendanceRecords, auditLogs }
