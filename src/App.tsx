@@ -42,7 +42,7 @@ import { AuditSettingsView } from './components/views/AuditSettingsView';
 import { CompanyDetailView } from './components/views/CompanyDetailView';
 import { ClientPortalView } from './components/views/ClientPortalView';
 import { CompanyRemindersView } from './components/views/CompanyRemindersView';
-import { EmployeePortalView } from './components/views/EmployeePortalView';
+import { EmployeePortalHub } from './components/views/EmployeePortalHub';
 
 // Enterprise ERP Initial System Data
 import {
@@ -427,7 +427,7 @@ export default function App() {
               onRecordCashOutflow={handleCreateTransaction}
             />
           ) : activeTab === 'employee-portal' ? (
-            <EmployeePortalView />
+            <EmployeePortalHub />
           ) : activeTab === 'workflow-automation' ? (
             <WorkflowAutomationHub />
           ) : activeTab === 'client-portal' ? (
