@@ -35,7 +35,7 @@ router.post('/transactions', async (req, res) => {
     const scope = getScope(req.body.scope)
     const description = requiredText(req.body.description, 'description')
 
-    const transaction = await db.transaction(async (tx) => {
+    const transaction = await db.transaction(async (tx: any) => {
       const [account] = await tx.select().from(financeAccounts).where(and(eq(financeAccounts.id, accountId), eq(financeAccounts.userId, userId))).limit(1)
       if (!account) throw new Error('Account not found')
       const transferAccountId = type === 'transfer' ? positiveInteger(req.body.transferAccountId, 'transferAccountId') : undefined
@@ -59,7 +59,7 @@ router.delete('/transactions/:id', async (req, res) => {
   try {
     const userId = getUserId(req)
     const transactionId = positiveInteger(req.params.id, 'transaction id')
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       const [transaction] = await tx.select().from(financeTransactions).where(and(eq(financeTransactions.id, transactionId), eq(financeTransactions.userId, userId))).limit(1)
       if (!transaction) throw new Error('Transaction not found')
       const direction = transaction.type === 'income' || transaction.type === 'deposit' ? -1 : transaction.type === 'expense' || transaction.type === 'withdrawal' ? 1 : 0

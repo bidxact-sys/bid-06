@@ -35,31 +35,31 @@ workspaceRoutes.post('/notifications/:id/read', async (req, res) => {
 workspaceRoutes.get('/clients', async (req, res) => {
   const userId = requireUser(req)
   const rows = await db.select({ client: clients }).from(clients).innerJoin(memberships, eq(memberships.workspaceId, clients.workspaceId)).where(and(eq(memberships.userId, userId), eq(memberships.status, 'active')))
-  res.json({ clients: rows.map((row) => row.client) })
+  res.json({ clients: rows.map((row: any) => row.client) })
 })
 
 workspaceRoutes.get('/projects', async (req, res) => {
   const userId = requireUser(req)
   const rows = await db.select({ project: projects }).from(projects).innerJoin(memberships, eq(memberships.workspaceId, projects.workspaceId)).where(and(eq(memberships.userId, userId), eq(memberships.status, 'active')))
-  res.json({ projects: rows.map((row) => row.project) })
+  res.json({ projects: rows.map((row: any) => row.project) })
 })
 
 workspaceRoutes.get('/reminders', async (req, res) => {
   const userId = requireUser(req)
   const rows = await db.select({ reminder: reminders }).from(reminders).innerJoin(memberships, eq(memberships.workspaceId, reminders.workspaceId)).where(and(eq(memberships.userId, userId), eq(memberships.status, 'active'))).orderBy(reminders.dueAt)
-  res.json({ reminders: rows.map((row) => row.reminder) })
+  res.json({ reminders: rows.map((row: any) => row.reminder) })
 })
 
 workspaceRoutes.get('/employees', async (req, res) => {
   const userId = requireUser(req)
   const rows = await db.select({ employee: employees }).from(employees).innerJoin(memberships, eq(memberships.workspaceId, employees.workspaceId)).where(and(eq(memberships.userId, userId), eq(memberships.status, 'active')))
-  res.json({ employees: rows.map((row) => row.employee) })
+  res.json({ employees: rows.map((row: any) => row.employee) })
 })
 
 workspaceRoutes.get('/sales/leads', async (req, res) => {
   const userId = requireUser(req)
   const rows = await db.select({ lead: salesLeads }).from(salesLeads).innerJoin(memberships, eq(memberships.workspaceId, salesLeads.workspaceId)).where(and(eq(memberships.userId, userId), eq(salesLeads.ownerUserId, userId))).orderBy(desc(salesLeads.updatedAt))
-  res.json({ leads: rows.map((row) => row.lead) })
+  res.json({ leads: rows.map((row: any) => row.lead) })
 })
 
 workspaceRoutes.post('/sales/leads', async (req, res) => {
